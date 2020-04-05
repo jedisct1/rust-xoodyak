@@ -116,7 +116,7 @@ impl Xoodyak {
         iv_len += 1;
         self.absorb_any(&iv[..iv_len], KEYED_ABSORB_RATE, 0x02);
         if let Some(counter) = counter {
-            self.absorb_any(counter, KEYED_ABSORB_RATE, 0x00)
+            self.absorb_any(counter, 1, 0x00)
         }
         Ok(())
     }
