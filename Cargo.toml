@@ -1,9 +1,9 @@
 [package]
 name = "xoodyak"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
-description = "Constant-time hex and base64 codecs from libsodium reimplemented in Rust"
+description = "Xoodyak / Xoodoo - A versatile cryptographic scheme that can be used for hashing, encryption, MAC computation and authenticated encryption."
 keywords = ["crypto", "xoodyak", "xoodoo", "cyclist"]
 license = "MIT"
 homepage = "https://github.com/jedisct1/rust-xoodyak"
