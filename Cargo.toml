@@ -1,0 +1,25 @@
+[package]
+name = "xoodyak"
+version = "0.1.0"
+authors = ["Frank Denis <github@pureftpd.org>"]
+edition = "2018"
+description = "Constant-time hex and base64 codecs from libsodium reimplemented in Rust"
+keywords = ["crypto", "xoodyak", "xoodoo", "cyclist"]
+license = "MIT"
+homepage = "https://github.com/jedisct1/rust-xoodyak"
+repository = "https://github.com/jedisct1/rust-xoodyak"
+categories = ["no-std", "cryptography"]
+readme = "README.md"
+
+[dependencies]
+unroll = "0.1.4"
+zeroize = "1.1.0"
+
+[features]
+default = ["std"]
+std = []
+
+[profile.release]
+codegen-units = 1
+incremental = false
+panic = "abort"
