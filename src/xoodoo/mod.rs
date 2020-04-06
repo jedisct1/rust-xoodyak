@@ -1,4 +1,3 @@
-use core::convert::TryInto;
 use rawbytes::RawBytes;
 use unroll::unroll_for_loops;
 use zeroize::Zeroize;
@@ -14,20 +13,6 @@ pub struct Xoodoo {
 }
 
 impl Xoodoo {
-    #[inline(always)]
-    fn bytes_view(&self) -> &[u8] {
-        let view = RawBytes::bytes_view(&self.st);
-        debug_assert_eq!(view.len(), 48);
-        view
-    }
-
-    #[inline(always)]
-    fn bytes_view_mut(&mut self) -> &mut [u8] {
-        let view = RawBytes::bytes_view_mut(&mut self.st);
-        debug_assert_eq!(view.len(), 48);
-        view
-    }
-
     #[allow(non_upper_case_globals)]
     #[unroll_for_loops]
     #[inline]
@@ -64,17 +49,26 @@ impl Xoodoo {
         }
     }
 
+    #[inline(always)]
+    fn bytes_view(&self) -> &[u8] {
+        let view = RawBytes::bytes_view(&self.st);
+        debug_assert_eq!(view.len(), 48);
+        view
+    }
+
+    #[inline(always)]
+    fn bytes_view_mut(&mut self) -> &mut [u8] {
+        let view = RawBytes::bytes_view_mut(&mut self.st);
+        debug_assert_eq!(view.len(), 48);
+        view
+    }
+
     #[inline]
     pub fn from_bytes(bytes: [u8; 48]) -> Self {
-        let mut st = [0u32; 12];
-        for (word, st_word) in bytes
-            .chunks_exact(4)
-            .map(|x| u32::from_le_bytes(x.try_into().unwrap()))
-            .zip(st.iter_mut())
-        {
-            *st_word = word
-        }
-        Xoodoo { st }
+        let mut st = Xoodoo::default();
+        let st_bytes = st.bytes_view_mut();
+        st_bytes.copy_from_slice(&bytes);
+        st
     }
 
     #[inline(always)]
