@@ -11,16 +11,27 @@ repository = "https://github.com/jedisct1/rust-xoodyak"
 categories = ["no-std", "cryptography"]
 readme = "README.md"
 
+[features]
+default = ["std"]
+std = []
+
 [dependencies]
 rawbytes = "0.1.1"
 unroll = "0.1.4"
 zeroize = "1.1.0"
 
-[features]
-default = ["std"]
-std = []
+[dev-dependencies]
+criterion = "0.3.1"
 
 [profile.release]
 codegen-units = 1
 incremental = false
 panic = "abort"
+lto = "fat"
+
+[profile.bench]
+codegen-units = 1
+
+[[bench]]
+name = "benchmark"
+harness = false
