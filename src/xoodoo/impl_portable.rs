@@ -1,7 +1,6 @@
 use super::{Xoodoo, ROUND_KEYS};
 
 impl Xoodoo {
-    #[allow(non_upper_case_globals)]
     #[inline]
     fn round(&mut self, round_key: u32) {
         let st = &mut self.st;
