@@ -125,9 +125,9 @@ fn test_aead() {
     let xm2 = st.aead_decrypt_to_vec(Some(&nonce), Some(ad), &m[..]);
     assert!(xm2.is_err());
 
-    let mut st = XoodyakKeyed::new(b"another key", None, None).unwrap();
-    let xc = st.aead_encrypt_to_vec(Some(&nonce), Some(ad), Some(m));
-    assert!(xc.is_err());
+    let mut st = XoodyakKeyed::new(b"Another key", None, None).unwrap();
+    let xm2 = st.aead_decrypt_to_vec(Some(&nonce), Some(ad), &m[..]);
+    assert!(xm2.is_err());
 }
 
 #[test]
