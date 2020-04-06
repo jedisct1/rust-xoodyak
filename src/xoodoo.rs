@@ -1,4 +1,5 @@
 use core::convert::TryInto;
+use rawbytes::RawBytes;
 use unroll::unroll_for_loops;
 use zeroize::Zeroize;
 
@@ -12,6 +13,20 @@ pub struct Xoodoo {
 }
 
 impl Xoodoo {
+    #[inline(always)]
+    fn bytes_view(&self) -> &[u8] {
+        let view = RawBytes::bytes_view(&self.st);
+        debug_assert_eq!(view.len(), 48);
+        view
+    }
+
+    #[inline(always)]
+    fn bytes_view_mut(&mut self) -> &mut [u8] {
+        let view = RawBytes::bytes_view_mut(&mut self.st);
+        debug_assert_eq!(view.len(), 48);
+        view
+    }
+
     #[allow(non_upper_case_globals)]
     #[unroll_for_loops]
     #[inline]
@@ -63,14 +78,8 @@ impl Xoodoo {
 
     #[inline(always)]
     pub fn bytes(&self, out: &mut [u8; 48]) {
-        for (word, out_word) in self
-            .st
-            .iter()
-            .map(|x| x.to_le_bytes())
-            .zip(out.chunks_exact_mut(4))
-        {
-            out_word.copy_from_slice(&word);
-        }
+        let st_bytes = self.bytes_view();
+        out.copy_from_slice(st_bytes);
     }
 
     #[inline(always)]
@@ -80,16 +89,16 @@ impl Xoodoo {
 
     #[inline(always)]
     pub fn add_bytes(&mut self, bytes: &[u8]) {
-        for (i, &byte) in bytes.iter().enumerate() {
-            self.add_byte(byte, i);
+        let st_bytes = self.bytes_view_mut();
+        for (st_byte, byte) in st_bytes.iter_mut().zip(bytes) {
+            *st_byte ^= byte;
         }
     }
 
     #[inline(always)]
-    pub fn extract_bytes(&self, out: &mut [u8], offset: usize) {
-        let mut t = [0u8; 48];
-        self.bytes(&mut t);
-        out.copy_from_slice(&t[offset..offset + out.len()]);
+    pub fn extract_bytes(&self, out: &mut [u8]) {
+        let st_bytes = self.bytes_view();
+        out.copy_from_slice(&st_bytes[..out.len()]);
     }
 }
 

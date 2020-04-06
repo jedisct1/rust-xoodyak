@@ -53,8 +53,8 @@ mod internal {
         }
 
         #[inline(always)]
-        fn extract_bytes(&mut self, out: &mut [u8], offset: usize) {
-            self.state().extract_bytes(out, offset);
+        fn extract_bytes(&mut self, out: &mut [u8]) {
+            self.state().extract_bytes(out);
         }
 
         #[inline(always)]
@@ -66,7 +66,7 @@ mod internal {
             }
             self.permute();
             if let Some(mut out) = out {
-                self.extract_bytes(&mut out, 0);
+                self.extract_bytes(&mut out);
             }
         }
 
