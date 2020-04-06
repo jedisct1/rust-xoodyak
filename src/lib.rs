@@ -2,10 +2,12 @@
 #![forbid(unsafe_code)]
 
 mod error;
+mod tag;
 mod xoodoo;
 mod xoodyak;
 
 pub use crate::error::*;
+pub use crate::tag::*;
 pub use crate::xoodoo::*;
 pub use crate::xoodyak::*;
 
