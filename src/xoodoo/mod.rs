@@ -31,6 +31,13 @@ impl Xoodoo {
         view
     }
 
+    #[inline(always)]
+    fn endian_swap(&mut self) {
+        for word in self.st.iter_mut() {
+            *word = (*word).to_le()
+        }
+    }
+
     #[inline]
     pub fn from_bytes(bytes: [u8; 48]) -> Self {
         let mut st = Xoodoo::default();
@@ -47,22 +54,28 @@ impl Xoodoo {
 
     #[inline(always)]
     pub fn add_byte(&mut self, byte: u8, offset: usize) {
+        self.endian_swap();
         let st_bytes = self.bytes_view_mut();
         st_bytes[offset] ^= byte;
+        self.endian_swap();
     }
 
     #[inline(always)]
     pub fn add_bytes(&mut self, bytes: &[u8]) {
+        self.endian_swap();
         let st_bytes = self.bytes_view_mut();
         for (st_byte, byte) in st_bytes.iter_mut().zip(bytes) {
             *st_byte ^= byte;
         }
+        self.endian_swap();
     }
 
     #[inline(always)]
-    pub fn extract_bytes(&self, out: &mut [u8]) {
+    pub fn extract_bytes(&mut self, out: &mut [u8]) {
+        self.endian_swap();
         let st_bytes = self.bytes_view();
         out.copy_from_slice(&st_bytes[..out.len()]);
+        self.endian_swap();
     }
 }
 
