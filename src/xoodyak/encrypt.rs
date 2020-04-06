@@ -2,7 +2,7 @@ use super::*;
 
 impl Xoodyak {
     pub fn encrypt(&mut self, out: &mut [u8], bin: &[u8]) -> Result<(), Error> {
-        if self.mode != Mode::Keyed {
+        if self.mode() != Mode::Keyed {
             return Err(Error::KeyRequired);
         }
         if out.len() < bin.len() {
@@ -25,7 +25,7 @@ impl Xoodyak {
     }
 
     pub fn decrypt(&mut self, out: &mut [u8], bin: &[u8]) -> Result<(), Error> {
-        if self.mode != Mode::Keyed {
+        if self.mode() != Mode::Keyed {
             return Err(Error::KeyRequired);
         }
         if out.len() < bin.len() {
@@ -48,7 +48,7 @@ impl Xoodyak {
     }
 
     pub fn encrypt_in_place(&mut self, in_out: &mut [u8]) -> Result<(), Error> {
-        if self.mode != Mode::Keyed {
+        if self.mode() != Mode::Keyed {
             return Err(Error::KeyRequired);
         }
         debug_assert_eq!(self.squeeze_rate, KEYED_SQUEEZE_RATE);
@@ -66,7 +66,7 @@ impl Xoodyak {
     }
 
     pub fn decrypt_in_place(&mut self, in_out: &mut [u8]) -> Result<(), Error> {
-        if self.mode != Mode::Keyed {
+        if self.mode() != Mode::Keyed {
             return Err(Error::KeyRequired);
         }
         debug_assert_eq!(self.squeeze_rate, KEYED_SQUEEZE_RATE);

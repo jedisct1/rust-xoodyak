@@ -58,7 +58,7 @@ impl Xoodyak {
     #[inline(always)]
     fn up(&mut self, out: Option<&mut [u8]>, cu: u8) {
         debug_assert!(out.as_ref().map(|x| x.len()).unwrap_or(0) <= self.squeeze_rate);
-        self.phase = Phase::Up;
+        self.set_phase(Phase::Up);
         if self.mode != Mode::Hash {
             self.add_byte(cu, 47);
         }
@@ -71,14 +71,14 @@ impl Xoodyak {
     #[inline(always)]
     fn down(&mut self, bin: Option<&[u8]>, cd: u8) {
         debug_assert!(bin.as_ref().map(|x| x.len()).unwrap_or(0) <= self.absorb_rate);
-        self.phase = Phase::Down;
+        self.set_phase(Phase::Down);
         if let Some(bin) = bin {
             self.add_bytes(&bin);
             self.add_byte(0x01, bin.len());
         } else {
             self.add_byte(0x01, 0);
         }
-        if self.mode == Mode::Hash {
+        if self.mode() == Mode::Hash {
             self.add_byte(cd & 0x01, 47);
         } else {
             self.add_byte(cd, 47);
@@ -88,7 +88,7 @@ impl Xoodyak {
     #[inline]
     fn absorb_any(&mut self, bin: &[u8], rate: usize, mut cd: u8) {
         for chunk in bin.chunks(rate) {
-            if self.phase != Phase::Up {
+            if self.phase() != Phase::Up {
                 self.up(None, 0x00)
             }
             self.down(Some(chunk), cd);
@@ -105,9 +105,9 @@ impl Xoodyak {
         if key.len() + key_id.unwrap_or_default().len() > KEYED_ABSORB_RATE {
             return Err(Error::KeyTooLong);
         }
-        self.absorb_rate = KEYED_ABSORB_RATE;
-        self.squeeze_rate = KEYED_SQUEEZE_RATE;
-        self.mode = Mode::Keyed;
+        self.set_absorb_rate(KEYED_ABSORB_RATE);
+        self.set_squeeze_rate(KEYED_SQUEEZE_RATE);
+        self.set_mode(Mode::Keyed);
         let mut iv = [0u8; KEYED_ABSORB_RATE];
         let key_len = key.len();
         let mut key_id_len = 0;
@@ -158,13 +158,43 @@ impl Xoodyak {
     }
 
     #[inline(always)]
+    fn mode(&self) -> Mode {
+        self.mode
+    }
+
+    #[inline(always)]
+    fn set_mode(&mut self, mode: Mode) {
+        self.mode = mode
+    }
+
+    #[inline(always)]
+    fn phase(&self) -> Phase {
+        self.phase
+    }
+
+    #[inline(always)]
+    fn set_phase(&mut self, phase: Phase) {
+        self.phase = phase
+    }
+
+    #[inline(always)]
     pub fn absorb_rate(&self) -> usize {
         self.absorb_rate
     }
 
     #[inline(always)]
+    fn set_absorb_rate(&mut self, rate: usize) {
+        self.absorb_rate = rate;
+    }
+
+    #[inline(always)]
     pub fn squeeze_rate(&self) -> usize {
         self.squeeze_rate
+    }
+
+    #[inline(always)]
+    fn set_squeeze_rate(&mut self, rate: usize) {
+        self.squeeze_rate = rate;
     }
 
     #[inline(always)]
