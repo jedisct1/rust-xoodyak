@@ -95,7 +95,7 @@ mod internal {
                 self.up(None, 0x00)
             }
             self.down(chunks_it.next(), cd);
-            for chunk in bin.chunks(rate) {
+            for chunk in chunks_it {
                 self.up(None, 0x00);
                 self.down(Some(chunk), 0x00);
             }
