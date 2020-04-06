@@ -95,3 +95,53 @@ fn test_unkeyed_hash() {
         ]
     );
 }
+
+#[test]
+fn test_aead() {
+    let mut st = Xoodyak::new(Some(b"key"), None, None).unwrap();
+    let st0 = st.clone();
+    let m = b"message";
+    let ad = b"ad";
+    let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    let c = st
+        .aead_encrypt_to_vec(Some(&nonce), Some(ad), Some(m))
+        .unwrap();
+
+    let mut st = st0.clone();
+    let m2 = st.aead_decrypt_to_vec(Some(&nonce), Some(ad), &c).unwrap();
+    assert_eq!(&m[..], &m2[..]);
+
+    let mut st = st0.clone();
+    let xm2 = st.aead_decrypt_to_vec(Some(&nonce), None, &c);
+    assert!(xm2.is_err());
+
+    let mut st = st0.clone();
+    let xm2 = st.aead_decrypt_to_vec(None, Some(ad), &c);
+    assert!(xm2.is_err());
+
+    let mut st = st0.clone();
+    let xm2 = st.aead_decrypt_to_vec(Some(&nonce), Some(ad), &m[..]);
+    assert!(xm2.is_err());
+
+    let mut st = Xoodyak::new(None, None, None).unwrap();
+    let xc = st.aead_encrypt_to_vec(Some(&nonce), Some(ad), Some(m));
+    assert!(xc.is_err());
+}
+
+#[test]
+fn test_aead_in_place() {
+    let mut st = Xoodyak::new(Some(b"key"), None, None).unwrap();
+    let st0 = st.clone();
+    let m = b"message";
+    let ad = b"ad";
+    let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    let c = st
+        .aead_encrypt_in_place_to_vec(Some(&nonce), Some(ad), m.to_vec())
+        .unwrap();
+
+    let mut st = st0.clone();
+    let m2 = st
+        .aead_decrypt_in_place_to_vec(Some(&nonce), Some(ad), c)
+        .unwrap();
+    assert_eq!(&m[..], &m2[..]);
+}
