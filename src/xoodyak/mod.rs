@@ -1,12 +1,13 @@
 mod hash;
 mod keyed;
+mod tag;
 
 use crate::error::*;
-use crate::tag::*;
 use crate::xoodoo::*;
 
 pub use hash::*;
 pub use keyed::*;
+pub use tag::*;
 
 pub(crate) const HASH_ABSORB_RATE: usize = 16;
 pub(crate) const HASH_SQUEEZE_RATE: usize = 16;
