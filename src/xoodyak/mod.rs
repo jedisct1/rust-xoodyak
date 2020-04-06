@@ -27,17 +27,23 @@ pub enum Phase {
     Down,
 }
 
-pub trait Xoodyak {
-    fn state(&mut self) -> &mut Xoodoo;
-    fn mode(&self) -> Mode;
-    fn set_mode(&mut self, mode: Mode);
-    fn phase(&self) -> Phase;
-    fn set_phase(&mut self, phase: Phase);
-    fn absorb_rate(&self) -> usize;
-    fn set_absorb_rate(&mut self, rate: usize);
-    fn squeeze_rate(&self) -> usize;
-    fn set_squeeze_rate(&mut self, rate: usize);
+mod internal {
+    use super::{Mode, Phase, Xoodoo};
 
+    pub trait Xoodyak {
+        fn state(&mut self) -> &mut Xoodoo;
+        fn mode(&self) -> Mode;
+        fn set_mode(&mut self, mode: Mode);
+        fn phase(&self) -> Phase;
+        fn set_phase(&mut self, phase: Phase);
+        fn absorb_rate(&self) -> usize;
+        fn set_absorb_rate(&mut self, rate: usize);
+        fn squeeze_rate(&self) -> usize;
+        fn set_squeeze_rate(&mut self, rate: usize);
+    }
+}
+
+pub trait Xoodyak: internal::Xoodyak {
     #[inline(always)]
     fn permute(&mut self) {
         self.state().permute()
