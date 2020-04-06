@@ -27,7 +27,7 @@ enum Phase {
 
 #[derive(Clone, Debug)]
 pub struct Xoodyak {
-    st: Xoodoo,
+    state: Xoodoo,
     mode: Mode,
     phase: Phase,
     absorb_rate: usize,
@@ -36,23 +36,68 @@ pub struct Xoodyak {
 
 impl Xoodyak {
     #[inline(always)]
+    fn state(&mut self) -> &mut Xoodoo {
+        &mut self.state
+    }
+
+    #[inline(always)]
+    fn mode(&self) -> Mode {
+        self.mode
+    }
+
+    #[inline(always)]
+    fn set_mode(&mut self, mode: Mode) {
+        self.mode = mode
+    }
+
+    #[inline(always)]
+    fn phase(&self) -> Phase {
+        self.phase
+    }
+
+    #[inline(always)]
+    fn set_phase(&mut self, phase: Phase) {
+        self.phase = phase
+    }
+
+    #[inline(always)]
+    pub fn absorb_rate(&self) -> usize {
+        self.absorb_rate
+    }
+
+    #[inline(always)]
+    fn set_absorb_rate(&mut self, rate: usize) {
+        self.absorb_rate = rate;
+    }
+
+    #[inline(always)]
+    pub fn squeeze_rate(&self) -> usize {
+        self.squeeze_rate
+    }
+
+    #[inline(always)]
+    fn set_squeeze_rate(&mut self, rate: usize) {
+        self.squeeze_rate = rate;
+    }
+
+    #[inline(always)]
     fn permute(&mut self) {
-        self.st.permute()
+        self.state().permute()
     }
 
     #[inline(always)]
     fn add_byte(&mut self, byte: u8, offset: usize) {
-        self.st.add_byte(byte, offset);
+        self.state().add_byte(byte, offset);
     }
 
     #[inline(always)]
     fn add_bytes(&mut self, bytes: &[u8]) {
-        self.st.add_bytes(bytes);
+        self.state().add_bytes(bytes);
     }
 
     #[inline(always)]
     fn extract_bytes(&mut self, out: &mut [u8], offset: usize) {
-        self.st.extract_bytes(out, offset);
+        self.state().extract_bytes(out, offset);
     }
 
     #[inline(always)]
@@ -145,7 +190,7 @@ impl Xoodyak {
         counter: Option<&[u8]>,
     ) -> Result<Self, Error> {
         let mut xoodyak = Xoodyak {
-            st: Xoodoo::default(),
+            state: Xoodoo::default(),
             phase: Phase::Up,
             mode: Mode::Hash,
             absorb_rate: HASH_ABSORB_RATE,
@@ -155,46 +200,6 @@ impl Xoodyak {
             xoodyak.absorb_key(key, key_id, counter)?;
         }
         Ok(xoodyak)
-    }
-
-    #[inline(always)]
-    fn mode(&self) -> Mode {
-        self.mode
-    }
-
-    #[inline(always)]
-    fn set_mode(&mut self, mode: Mode) {
-        self.mode = mode
-    }
-
-    #[inline(always)]
-    fn phase(&self) -> Phase {
-        self.phase
-    }
-
-    #[inline(always)]
-    fn set_phase(&mut self, phase: Phase) {
-        self.phase = phase
-    }
-
-    #[inline(always)]
-    pub fn absorb_rate(&self) -> usize {
-        self.absorb_rate
-    }
-
-    #[inline(always)]
-    fn set_absorb_rate(&mut self, rate: usize) {
-        self.absorb_rate = rate;
-    }
-
-    #[inline(always)]
-    pub fn squeeze_rate(&self) -> usize {
-        self.squeeze_rate
-    }
-
-    #[inline(always)]
-    fn set_squeeze_rate(&mut self, rate: usize) {
-        self.squeeze_rate = rate;
     }
 
     #[inline(always)]
