@@ -4,10 +4,7 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct XoodyakHash {
     state: Xoodoo,
-    mode: Mode,
     phase: Phase,
-    absorb_rate: usize,
-    squeeze_rate: usize,
 }
 
 impl XoodyakHash {
@@ -15,9 +12,6 @@ impl XoodyakHash {
         XoodyakHash {
             state: Xoodoo::default(),
             phase: Phase::Up,
-            mode: Mode::Hash,
-            absorb_rate: HASH_ABSORB_RATE,
-            squeeze_rate: HASH_SQUEEZE_RATE,
         }
     }
 }
@@ -37,12 +31,12 @@ impl internal::Xoodyak for XoodyakHash {
 
     #[inline(always)]
     fn mode(&self) -> Mode {
-        self.mode
+        Mode::Hash
     }
 
     #[inline(always)]
-    fn set_mode(&mut self, mode: Mode) {
-        self.mode = mode
+    fn set_mode(&mut self, _mode: Mode) {
+        unreachable!();
     }
 
     #[inline(always)]
@@ -57,22 +51,22 @@ impl internal::Xoodyak for XoodyakHash {
 
     #[inline(always)]
     fn absorb_rate(&self) -> usize {
-        self.absorb_rate
+        HASH_ABSORB_RATE
     }
 
     #[inline(always)]
-    fn set_absorb_rate(&mut self, rate: usize) {
-        self.absorb_rate = rate;
+    fn set_absorb_rate(&mut self, _rate: usize) {
+        unreachable!();
     }
 
     #[inline(always)]
     fn squeeze_rate(&self) -> usize {
-        self.squeeze_rate
+        HASH_SQUEEZE_RATE
     }
 
     #[inline(always)]
-    fn set_squeeze_rate(&mut self, rate: usize) {
-        self.squeeze_rate = rate;
+    fn set_squeeze_rate(&mut self, _rate: usize) {
+        unreachable!();
     }
 }
 
