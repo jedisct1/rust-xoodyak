@@ -32,13 +32,10 @@ mod internal {
     pub trait Xoodyak {
         fn state(&mut self) -> &mut Xoodoo;
         fn mode(&self) -> Mode;
-        fn set_mode(&mut self, mode: Mode);
         fn phase(&self) -> Phase;
         fn set_phase(&mut self, phase: Phase);
         fn absorb_rate(&self) -> usize;
-        fn set_absorb_rate(&mut self, rate: usize);
         fn squeeze_rate(&self) -> usize;
-        fn set_squeeze_rate(&mut self, rate: usize);
 
         #[inline(always)]
         fn permute(&mut self) {

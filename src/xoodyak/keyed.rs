@@ -7,8 +7,6 @@ pub struct XoodyakKeyed {
     state: Xoodoo,
     mode: Mode,
     phase: Phase,
-    absorb_rate: usize,
-    squeeze_rate: usize,
 }
 
 impl XoodyakKeyed {
@@ -17,8 +15,6 @@ impl XoodyakKeyed {
             state: Xoodoo::default(),
             phase: Phase::Up,
             mode: Mode::Keyed,
-            absorb_rate: KEYED_ABSORB_RATE,
-            squeeze_rate: KEYED_SQUEEZE_RATE,
         };
         xoodyak.absorb_key(key, key_id, counter)?;
         Ok(xoodyak)
@@ -65,11 +61,6 @@ impl internal::Xoodyak for XoodyakKeyed {
     }
 
     #[inline(always)]
-    fn set_mode(&mut self, mode: Mode) {
-        self.mode = mode
-    }
-
-    #[inline(always)]
     fn phase(&self) -> Phase {
         self.phase
     }
@@ -81,22 +72,12 @@ impl internal::Xoodyak for XoodyakKeyed {
 
     #[inline(always)]
     fn absorb_rate(&self) -> usize {
-        self.absorb_rate
-    }
-
-    #[inline(always)]
-    fn set_absorb_rate(&mut self, rate: usize) {
-        self.absorb_rate = rate;
+        KEYED_ABSORB_RATE
     }
 
     #[inline(always)]
     fn squeeze_rate(&self) -> usize {
-        self.squeeze_rate
-    }
-
-    #[inline(always)]
-    fn set_squeeze_rate(&mut self, rate: usize) {
-        self.squeeze_rate = rate;
+        KEYED_SQUEEZE_RATE
     }
 }
 
@@ -120,7 +101,6 @@ impl XoodyakKeyed {
         if out.len() < bin.len() {
             return Err(Error::InvalidLength);
         }
-        debug_assert_eq!(self.squeeze_rate, KEYED_SQUEEZE_RATE);
         let mut cu = 0x80;
         for (out_chunk, chunk) in out
             .chunks_mut(KEYED_SQUEEZE_RATE)
@@ -143,7 +123,6 @@ impl XoodyakKeyed {
         if out.len() < bin.len() {
             return Err(Error::InvalidLength);
         }
-        debug_assert_eq!(self.squeeze_rate, KEYED_SQUEEZE_RATE);
         let mut cu = 0x80;
         for (out_chunk, chunk) in out
             .chunks_mut(KEYED_SQUEEZE_RATE)
@@ -163,7 +142,6 @@ impl XoodyakKeyed {
         if self.mode() != Mode::Keyed {
             return Err(Error::KeyRequired);
         }
-        debug_assert_eq!(self.squeeze_rate, KEYED_SQUEEZE_RATE);
         let mut tmp = [0u8; KEYED_SQUEEZE_RATE];
         let mut cu = 0x80;
         for in_out_chunk in in_out.chunks_mut(KEYED_SQUEEZE_RATE) {
@@ -181,7 +159,6 @@ impl XoodyakKeyed {
         if self.mode() != Mode::Keyed {
             return Err(Error::KeyRequired);
         }
-        debug_assert_eq!(self.squeeze_rate, KEYED_SQUEEZE_RATE);
         let mut tmp = [0u8; KEYED_SQUEEZE_RATE];
         let mut cu = 0x80;
         for in_out_chunk in in_out.chunks_mut(KEYED_SQUEEZE_RATE) {

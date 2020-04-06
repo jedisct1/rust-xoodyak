@@ -35,11 +35,6 @@ impl internal::Xoodyak for XoodyakHash {
     }
 
     #[inline(always)]
-    fn set_mode(&mut self, _mode: Mode) {
-        unreachable!();
-    }
-
-    #[inline(always)]
     fn phase(&self) -> Phase {
         self.phase
     }
@@ -55,18 +50,8 @@ impl internal::Xoodyak for XoodyakHash {
     }
 
     #[inline(always)]
-    fn set_absorb_rate(&mut self, _rate: usize) {
-        unreachable!();
-    }
-
-    #[inline(always)]
     fn squeeze_rate(&self) -> usize {
         HASH_SQUEEZE_RATE
-    }
-
-    #[inline(always)]
-    fn set_squeeze_rate(&mut self, _rate: usize) {
-        unreachable!();
     }
 }
 
