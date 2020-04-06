@@ -26,7 +26,7 @@ impl XoodyakKeyed {
         key_id: Option<&[u8]>,
         counter: Option<&[u8]>,
     ) -> Result<(), Error> {
-        if key.len() + key_id.unwrap_or_default().len() > KEYED_ABSORB_RATE {
+        if key.len() + key_id.unwrap_or_default().len() >= KEYED_ABSORB_RATE {
             return Err(Error::KeyTooLong);
         }
         let mut iv = [0u8; KEYED_ABSORB_RATE];
