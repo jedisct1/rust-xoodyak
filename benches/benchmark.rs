@@ -1,7 +1,4 @@
-#[macro_use]
-extern crate criterion;
-
-use criterion::Criterion;
+use criterion::{criterion_group, criterion_main, Criterion};
 use xoodyak::*;
 
 fn criterion_benchmark(c: &mut Criterion) {
