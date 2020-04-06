@@ -1,10 +1,7 @@
 use super::{Xoodoo, ROUND_KEYS};
 
-use unroll::unroll_for_loops;
-
 impl Xoodoo {
     #[allow(non_upper_case_globals)]
-    #[unroll_for_loops]
     #[inline]
     fn round(&mut self, round_key: u32) {
         let st = &mut self.st;
@@ -32,7 +29,6 @@ impl Xoodoo {
         st.swap(9, 11);
     }
 
-    #[unroll_for_loops]
     pub fn permute(&mut self) {
         for &round_key in &ROUND_KEYS {
             self.round(round_key)

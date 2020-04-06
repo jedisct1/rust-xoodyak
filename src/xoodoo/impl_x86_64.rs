@@ -1,7 +1,6 @@
 use super::{Xoodoo, ROUND_KEYS};
 
 use core::arch::x86_64::*;
-use unroll::unroll_for_loops;
 
 impl Xoodoo {
     #[allow(
@@ -9,7 +8,6 @@ impl Xoodoo {
         clippy::many_single_char_names,
         clippy::cast_ptr_alignment
     )]
-    #[unroll_for_loops]
     pub fn permute(&mut self) {
         let st = &mut self.st;
         unsafe {
