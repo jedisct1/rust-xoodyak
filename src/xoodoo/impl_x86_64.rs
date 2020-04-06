@@ -1,6 +1,6 @@
 use super::{Xoodoo, ROUND_KEYS};
 
-use std::arch::x86_64::*;
+use core::arch::x86_64::*;
 use unroll::unroll_for_loops;
 
 impl Xoodoo {
