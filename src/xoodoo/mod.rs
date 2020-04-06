@@ -47,7 +47,8 @@ impl Xoodoo {
 
     #[inline(always)]
     pub fn add_byte(&mut self, byte: u8, offset: usize) {
-        self.st[offset / 4] ^= (byte as u32) << ((offset & 3) * 8);
+        let st_bytes = self.bytes_view_mut();
+        st_bytes[offset] ^= byte;
     }
 
     #[inline(always)]
