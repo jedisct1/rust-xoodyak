@@ -89,22 +89,22 @@ mod internal {
         }
 
         #[inline]
-        fn absorb_any(&mut self, bin: &[u8], rate: usize, mut cd: u8) {
+        fn absorb_any(&mut self, bin: &[u8], rate: usize, cd: u8) {
+            let mut chunks_it = bin.chunks(rate);
+            if self.phase() != Phase::Up {
+                self.up(None, 0x00)
+            }
+            self.down(chunks_it.next(), cd);
             for chunk in bin.chunks(rate) {
-                if self.phase() != Phase::Up {
-                    self.up(None, 0x00)
-                }
-                self.down(Some(chunk), cd);
-                cd = 0x00
+                self.up(None, 0x00);
+                self.down(Some(chunk), 0x00);
             }
         }
 
         #[inline]
         fn squeeze_any(&mut self, out: &mut [u8], cu: u8) {
             let mut chunks_it = out.chunks_mut(self.squeeze_rate());
-            if let Some(chunk) = chunks_it.next() {
-                self.up(Some(chunk), cu);
-            }
+            self.up(chunks_it.next(), cu);
             for chunk in chunks_it {
                 self.down(None, 0x00);
                 self.up(Some(chunk), 0x00);
