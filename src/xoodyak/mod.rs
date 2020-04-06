@@ -95,7 +95,7 @@ mod internal {
                     self.up(None, 0x00)
                 }
                 self.down(Some(chunk), cd);
-                cd = 0
+                cd = 0x00
             }
         }
 
@@ -117,6 +117,14 @@ pub trait Xoodyak: internal::Xoodyak {
     #[inline(always)]
     fn absorb(&mut self, bin: &[u8]) {
         self.absorb_any(bin, self.absorb_rate(), 0x03);
+    }
+
+    #[inline]
+    fn absorb_more(&mut self, bin: &[u8], rate: usize) {
+        for chunk in bin.chunks(rate) {
+            self.up(None, 0x00);
+            self.down(Some(chunk), 0x00);
+        }
     }
 
     #[inline(always)]
