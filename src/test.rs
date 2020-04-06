@@ -40,17 +40,17 @@ fn test_encrypt() {
     assert_eq!(&m[..], m2.as_slice());
 
     let mut st = st0.clone();
-    st.ratchet().unwrap();
+    st.ratchet();
     let m2 = st.decrypt_to_vec(&c).unwrap();
     assert_ne!(&m[..], m2.as_slice());
 
     let c0 = c.clone();
     let mut st = st0.clone();
-    st.decrypt_in_place(&mut c).unwrap();
+    st.decrypt_in_place(&mut c);
     assert_eq!(&m[..], &c[..]);
 
     let mut st = st0.clone();
-    st.encrypt_in_place(&mut c).unwrap();
+    st.encrypt_in_place(&mut c);
     assert_eq!(c0, c);
 
     let tag = st.squeeze_to_vec(32);
@@ -126,9 +126,7 @@ fn test_aead_in_place() {
     let m = b"message";
     let ad = b"ad";
     let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-    let c = st
-        .aead_encrypt_in_place_to_vec(Some(&nonce), Some(ad), m.to_vec())
-        .unwrap();
+    let c = st.aead_encrypt_in_place_to_vec(Some(&nonce), Some(ad), m.to_vec());
 
     let mut st = st0.clone();
     let m2 = st

@@ -84,20 +84,15 @@ impl internal::Xoodyak for XoodyakKeyed {
 impl Xoodyak for XoodyakKeyed {}
 
 impl XoodyakKeyed {
-    pub fn ratchet(&mut self) -> Result<(), Error> {
-        if self.mode() != Mode::Keyed {
-            return Err(Error::KeyRequired);
-        }
+    pub fn ratchet(&mut self) {
+        debug_assert_eq!(self.mode(), Mode::Keyed);
         let mut rolled_key = [0u8; RATCHET_RATE];
         self.squeeze_any(&mut rolled_key, 0x10);
         self.absorb_any(&rolled_key, RATCHET_RATE, 0x00);
-        Ok(())
     }
 
     pub fn encrypt(&mut self, out: &mut [u8], bin: &[u8]) -> Result<(), Error> {
-        if self.mode() != Mode::Keyed {
-            return Err(Error::KeyRequired);
-        }
+        debug_assert_eq!(self.mode(), Mode::Keyed);
         if out.len() < bin.len() {
             return Err(Error::InvalidLength);
         }
@@ -117,9 +112,7 @@ impl XoodyakKeyed {
     }
 
     pub fn decrypt(&mut self, out: &mut [u8], bin: &[u8]) -> Result<(), Error> {
-        if self.mode() != Mode::Keyed {
-            return Err(Error::KeyRequired);
-        }
+        debug_assert_eq!(self.mode(), Mode::Keyed);
         if out.len() < bin.len() {
             return Err(Error::InvalidLength);
         }
@@ -138,10 +131,8 @@ impl XoodyakKeyed {
         Ok(())
     }
 
-    pub fn encrypt_in_place(&mut self, in_out: &mut [u8]) -> Result<(), Error> {
-        if self.mode() != Mode::Keyed {
-            return Err(Error::KeyRequired);
-        }
+    pub fn encrypt_in_place(&mut self, in_out: &mut [u8]) {
+        debug_assert_eq!(self.mode(), Mode::Keyed);
         let mut tmp = [0u8; KEYED_SQUEEZE_RATE];
         let mut cu = 0x80;
         for in_out_chunk in in_out.chunks_mut(KEYED_SQUEEZE_RATE) {
@@ -152,13 +143,10 @@ impl XoodyakKeyed {
                 *in_out_chunk_byte ^= *tmp_byte;
             }
         }
-        Ok(())
     }
 
-    pub fn decrypt_in_place(&mut self, in_out: &mut [u8]) -> Result<(), Error> {
-        if self.mode() != Mode::Keyed {
-            return Err(Error::KeyRequired);
-        }
+    pub fn decrypt_in_place(&mut self, in_out: &mut [u8]) {
+        debug_assert_eq!(self.mode(), Mode::Keyed);
         let mut tmp = [0u8; KEYED_SQUEEZE_RATE];
         let mut cu = 0x80;
         for in_out_chunk in in_out.chunks_mut(KEYED_SQUEEZE_RATE) {
@@ -169,7 +157,6 @@ impl XoodyakKeyed {
             }
             self.down(Some(in_out_chunk), 0x00);
         }
-        Ok(())
     }
 
     pub fn aead_encrypt_detached(
@@ -256,13 +243,13 @@ impl XoodyakKeyed {
         in_out: &mut [u8],
         nonce: Option<&[u8]>,
         ad: Option<&[u8]>,
-    ) -> Result<Tag, Error> {
+    ) -> Tag {
         self.absorb(nonce.unwrap_or_default());
         self.absorb(ad.unwrap_or_default());
-        self.encrypt_in_place(in_out)?;
+        self.encrypt_in_place(in_out);
         let mut auth_tag = Tag::default();
         self.squeeze(auth_tag.inner_mut());
-        Ok(auth_tag)
+        auth_tag
     }
 
     pub fn aead_encrypt_in_place(
@@ -275,7 +262,7 @@ impl XoodyakKeyed {
             .len()
             .checked_sub(AUTH_TAG_BYTES)
             .ok_or(Error::InvalidLength)?;
-        let auth_tag = self.aead_encrypt_in_place_detached(&mut in_out[..ct_len], nonce, ad)?;
+        let auth_tag = self.aead_encrypt_in_place_detached(&mut in_out[..ct_len], nonce, ad);
         in_out[ct_len..].copy_from_slice(auth_tag.as_ref());
         Ok(())
     }
@@ -289,7 +276,7 @@ impl XoodyakKeyed {
     ) -> Result<(), Error> {
         self.absorb(nonce.unwrap_or_default());
         self.absorb(ad.unwrap_or_default());
-        self.decrypt_in_place(in_out)?;
+        self.decrypt_in_place(in_out);
         let mut computed_tag = Tag::default();
         self.squeeze(computed_tag.inner_mut());
         if computed_tag == *auth_tag {
@@ -361,11 +348,11 @@ impl XoodyakKeyed {
         nonce: Option<&[u8]>,
         ad: Option<&[u8]>,
         mut in_out: Vec<u8>,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Vec<u8> {
         let ct_len = in_out.len();
         in_out.resize_with(ct_len + AUTH_TAG_BYTES, || 0);
-        self.aead_encrypt_in_place(&mut in_out, nonce, ad)?;
-        Ok(in_out)
+        self.aead_encrypt_in_place(&mut in_out, nonce, ad).unwrap();
+        in_out
     }
 
     #[cfg(feature = "std")]
