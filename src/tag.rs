@@ -1,5 +1,6 @@
 use zeroize::Zeroize;
 
+use crate::error::Error;
 use crate::AUTH_TAG_BYTES;
 
 #[derive(Clone, Debug, Default, Eq)]
@@ -9,6 +10,15 @@ impl Tag {
     #[inline(always)]
     pub(crate) fn inner_mut(&mut self) -> &mut [u8; AUTH_TAG_BYTES] {
         &mut self.0
+    }
+
+    #[inline]
+    pub fn verify(&self, bin: [u8; AUTH_TAG_BYTES]) -> Result<(), Error> {
+        if &Tag::from(bin) == self {
+            Ok(())
+        } else {
+            Err(Error::TagMismatch)
+        }
     }
 }
 
