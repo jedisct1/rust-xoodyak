@@ -1,5 +1,6 @@
+use super::internal::Xoodyak as _;
+use super::internal::{Mode, Phase};
 use super::*;
-use internal::Xoodyak as _;
 
 #[derive(Clone, Debug)]
 pub struct XoodyakKeyed {

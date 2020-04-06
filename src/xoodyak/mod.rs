@@ -13,22 +13,21 @@ pub(crate) const HASH_SQUEEZE_RATE: usize = 16;
 pub(crate) const KEYED_ABSORB_RATE: usize = 44;
 pub(crate) const KEYED_SQUEEZE_RATE: usize = 24;
 pub(crate) const RATCHET_RATE: usize = 16;
-pub const AUTH_TAG_BYTES: usize = 16;
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Mode {
-    Hash,
-    Keyed,
-}
-
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum Phase {
-    Up,
-    Down,
-}
 
 mod internal {
     use super::*;
+
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    pub enum Mode {
+        Hash,
+        Keyed,
+    }
+
+    #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+    pub enum Phase {
+        Up,
+        Down,
+    }
 
     pub trait Xoodyak {
         fn state(&mut self) -> &mut Xoodoo;

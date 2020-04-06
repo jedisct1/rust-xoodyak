@@ -6,14 +6,11 @@ mod tag;
 mod xoodoo;
 mod xoodyak;
 
-pub mod prelude {
-    pub use crate::xoodoo::*;
-    pub use crate::xoodyak::*;
-}
-
-pub use crate::error::*;
-pub use crate::tag::*;
-pub use prelude::*;
+pub use crate::error::Error as XoodyakError;
+pub use crate::tag::Tag as XoodyakTag;
+pub use crate::tag::AUTH_TAG_BYTES as XOODYAK_AUTH_TAG_BYTES;
+pub use crate::xoodoo::*;
+pub use crate::xoodyak::*;
 
 #[cfg(test)]
 mod test;

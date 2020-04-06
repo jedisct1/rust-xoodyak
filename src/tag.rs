@@ -1,7 +1,8 @@
 use zeroize::Zeroize;
 
 use crate::error::Error;
-use crate::AUTH_TAG_BYTES;
+
+pub const AUTH_TAG_BYTES: usize = 16;
 
 #[derive(Clone, Debug, Default, Eq)]
 pub struct Tag([u8; AUTH_TAG_BYTES]);
