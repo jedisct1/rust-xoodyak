@@ -10,7 +10,6 @@ impl Xoodoo {
         clippy::cast_ptr_alignment
     )]
     #[unroll_for_loops]
-    #[inline]
     pub fn permute(&mut self) {
         let st = &mut self.st;
         unsafe {
