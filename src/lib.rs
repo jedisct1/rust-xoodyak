@@ -13,7 +13,7 @@ pub use crate::xoodyak::*;
 
 #[test]
 fn test_keyed_empty() {
-    let mut st = Xoodyak::new(Some(b"key"), None, None).unwrap();
+    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
     let mut out = [0u8; 32];
     st.squeeze(&mut out);
     assert_eq!(
@@ -27,7 +27,7 @@ fn test_keyed_empty() {
 
 #[test]
 fn test_unkeyed_empty() {
-    let mut st = Xoodyak::new(None, None, None).unwrap();
+    let mut st = XoodyakHash::new();
     let mut out = [0u8; 32];
     st.squeeze(&mut out);
     assert_eq!(
@@ -41,7 +41,7 @@ fn test_unkeyed_empty() {
 
 #[test]
 fn test_encrypt() {
-    let mut st = Xoodyak::new(Some(b"key"), None, None).unwrap();
+    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
     let st0 = st.clone();
     let m = b"message";
     let mut c = st.encrypt_to_vec(m).unwrap();
@@ -76,7 +76,7 @@ fn test_encrypt() {
 
 #[test]
 fn test_unkeyed_hash() {
-    let mut st = Xoodyak::new(None, None, None).unwrap();
+    let mut st = XoodyakHash::new();
     let m = b"Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
     st.absorb(&m[..]);
     let hash = st.squeeze_to_vec(32);
@@ -100,7 +100,7 @@ fn test_unkeyed_hash() {
 
 #[test]
 fn test_aead() {
-    let mut st = Xoodyak::new(Some(b"key"), None, None).unwrap();
+    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
     let st0 = st.clone();
     let m = b"message";
     let ad = b"ad";
@@ -125,14 +125,14 @@ fn test_aead() {
     let xm2 = st.aead_decrypt_to_vec(Some(&nonce), Some(ad), &m[..]);
     assert!(xm2.is_err());
 
-    let mut st = Xoodyak::new(None, None, None).unwrap();
+    let mut st = XoodyakKeyed::new(b"another key", None, None).unwrap();
     let xc = st.aead_encrypt_to_vec(Some(&nonce), Some(ad), Some(m));
     assert!(xc.is_err());
 }
 
 #[test]
 fn test_aead_in_place() {
-    let mut st = Xoodyak::new(Some(b"key"), None, None).unwrap();
+    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
     let st0 = st.clone();
     let m = b"message";
     let ad = b"ad";

@@ -1,10 +1,12 @@
-mod encrypt;
-#[cfg(feature = "std")]
-mod std;
+mod hash;
+mod keyed;
 
 use crate::error::*;
 use crate::tag::*;
 use crate::xoodoo::*;
+
+pub use hash::*;
+pub use keyed::*;
 
 pub(crate) const HASH_ABSORB_RATE: usize = 16;
 pub(crate) const HASH_SQUEEZE_RATE: usize = 16;
@@ -14,71 +16,27 @@ pub(crate) const RATCHET_RATE: usize = 16;
 pub const AUTH_TAG_BYTES: usize = 16;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum Mode {
+pub enum Mode {
     Hash,
     Keyed,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
-enum Phase {
+pub enum Phase {
     Up,
     Down,
 }
 
-#[derive(Clone, Debug)]
-pub struct Xoodyak {
-    state: Xoodoo,
-    mode: Mode,
-    phase: Phase,
-    absorb_rate: usize,
-    squeeze_rate: usize,
-}
-
-impl Xoodyak {
-    #[inline(always)]
-    fn state(&mut self) -> &mut Xoodoo {
-        &mut self.state
-    }
-
-    #[inline(always)]
-    fn mode(&self) -> Mode {
-        self.mode
-    }
-
-    #[inline(always)]
-    fn set_mode(&mut self, mode: Mode) {
-        self.mode = mode
-    }
-
-    #[inline(always)]
-    fn phase(&self) -> Phase {
-        self.phase
-    }
-
-    #[inline(always)]
-    fn set_phase(&mut self, phase: Phase) {
-        self.phase = phase
-    }
-
-    #[inline(always)]
-    pub fn absorb_rate(&self) -> usize {
-        self.absorb_rate
-    }
-
-    #[inline(always)]
-    fn set_absorb_rate(&mut self, rate: usize) {
-        self.absorb_rate = rate;
-    }
-
-    #[inline(always)]
-    pub fn squeeze_rate(&self) -> usize {
-        self.squeeze_rate
-    }
-
-    #[inline(always)]
-    fn set_squeeze_rate(&mut self, rate: usize) {
-        self.squeeze_rate = rate;
-    }
+pub trait Xoodyak {
+    fn state(&mut self) -> &mut Xoodoo;
+    fn mode(&self) -> Mode;
+    fn set_mode(&mut self, mode: Mode);
+    fn phase(&self) -> Phase;
+    fn set_phase(&mut self, phase: Phase);
+    fn absorb_rate(&self) -> usize;
+    fn set_absorb_rate(&mut self, rate: usize);
+    fn squeeze_rate(&self) -> usize;
+    fn set_squeeze_rate(&mut self, rate: usize);
 
     #[inline(always)]
     fn permute(&mut self) {
@@ -102,9 +60,9 @@ impl Xoodyak {
 
     #[inline(always)]
     fn up(&mut self, out: Option<&mut [u8]>, cu: u8) {
-        debug_assert!(out.as_ref().map(|x| x.len()).unwrap_or(0) <= self.squeeze_rate);
+        debug_assert!(out.as_ref().map(|x| x.len()).unwrap_or(0) <= self.squeeze_rate());
         self.set_phase(Phase::Up);
-        if self.mode != Mode::Hash {
+        if self.mode() != Mode::Hash {
             self.add_byte(cu, 47);
         }
         self.permute();
@@ -115,7 +73,7 @@ impl Xoodyak {
 
     #[inline(always)]
     fn down(&mut self, bin: Option<&[u8]>, cd: u8) {
-        debug_assert!(bin.as_ref().map(|x| x.len()).unwrap_or(0) <= self.absorb_rate);
+        debug_assert!(bin.as_ref().map(|x| x.len()).unwrap_or(0) <= self.absorb_rate());
         self.set_phase(Phase::Down);
         if let Some(bin) = bin {
             self.add_bytes(&bin);
@@ -174,7 +132,7 @@ impl Xoodyak {
 
     #[inline]
     fn squeeze_any(&mut self, out: &mut [u8], cu: u8) {
-        let mut chunks_it = out.chunks_mut(self.squeeze_rate);
+        let mut chunks_it = out.chunks_mut(self.squeeze_rate());
         if let Some(chunk) = chunks_it.next() {
             self.up(Some(chunk), cu);
         }
@@ -184,54 +142,33 @@ impl Xoodyak {
         }
     }
 
-    pub fn new(
-        key: Option<&[u8]>,
-        key_id: Option<&[u8]>,
-        counter: Option<&[u8]>,
-    ) -> Result<Self, Error> {
-        let mut xoodyak = Xoodyak {
-            state: Xoodoo::default(),
-            phase: Phase::Up,
-            mode: Mode::Hash,
-            absorb_rate: HASH_ABSORB_RATE,
-            squeeze_rate: HASH_SQUEEZE_RATE,
-        };
-        if let Some(key) = key {
-            xoodyak.absorb_key(key, key_id, counter)?;
-        }
-        Ok(xoodyak)
+    #[inline(always)]
+    fn absorb(&mut self, bin: &[u8]) {
+        self.absorb_any(bin, self.absorb_rate(), 0x03);
     }
 
     #[inline(always)]
-    pub fn absorb(&mut self, bin: &[u8]) {
-        self.absorb_any(bin, self.absorb_rate, 0x03);
-    }
-
-    #[inline(always)]
-    pub fn squeeze(&mut self, out: &mut [u8]) {
+    fn squeeze(&mut self, out: &mut [u8]) {
         self.squeeze_any(out, 0x40);
     }
 
     #[inline(always)]
-    pub fn squeeze_key(&mut self, out: &mut [u8]) {
+    fn squeeze_key(&mut self, out: &mut [u8]) {
         self.squeeze_any(out, 0x20);
     }
 
     #[inline]
-    pub fn squeeze_more(&mut self, out: &mut [u8]) {
-        for chunk in out.chunks_mut(self.squeeze_rate) {
+    fn squeeze_more(&mut self, out: &mut [u8]) {
+        for chunk in out.chunks_mut(self.squeeze_rate()) {
             self.down(None, 0x00);
             self.up(Some(chunk), 0x00);
         }
     }
 
-    pub fn ratchet(&mut self) -> Result<(), Error> {
-        if self.mode != Mode::Keyed {
-            return Err(Error::KeyRequired);
-        }
-        let mut rolled_key = [0u8; RATCHET_RATE];
-        self.squeeze_any(&mut rolled_key, 0x10);
-        self.absorb_any(&rolled_key, RATCHET_RATE, 0x00);
-        Ok(())
+    #[cfg(feature = "std")]
+    fn squeeze_to_vec(&mut self, len: usize) -> Vec<u8> {
+        let mut out = vec![0u8; len];
+        self.squeeze(&mut out);
+        out
     }
 }
