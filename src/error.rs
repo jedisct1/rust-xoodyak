@@ -3,4 +3,5 @@ pub enum Error {
     KeyTooLong,
     TagMismatch,
     InvalidLength,
+    KeyRequired,
 }

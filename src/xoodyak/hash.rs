@@ -23,7 +23,7 @@ impl Default for XoodyakHash {
     }
 }
 
-impl internal::Xoodyak for XoodyakHash {
+impl internal::XoodyakCommon for XoodyakHash {
     #[inline(always)]
     fn state(&mut self) -> &mut Xoodoo {
         &mut self.state
@@ -55,4 +55,4 @@ impl internal::Xoodyak for XoodyakHash {
     }
 }
 
-impl Xoodyak for XoodyakHash {}
+impl XoodyakCommon for XoodyakHash {}

@@ -1,4 +1,4 @@
-use super::internal::Xoodyak as _;
+use super::internal::XoodyakCommon as _;
 use super::internal::{Mode, Phase};
 use super::*;
 
@@ -9,47 +9,7 @@ pub struct XoodyakKeyed {
     phase: Phase,
 }
 
-impl XoodyakKeyed {
-    pub fn new(key: &[u8], key_id: Option<&[u8]>, counter: Option<&[u8]>) -> Result<Self, Error> {
-        let mut xoodyak = XoodyakKeyed {
-            state: Xoodoo::default(),
-            phase: Phase::Up,
-            mode: Mode::Keyed,
-        };
-        xoodyak.absorb_key(key, key_id, counter)?;
-        Ok(xoodyak)
-    }
-
-    fn absorb_key(
-        &mut self,
-        key: &[u8],
-        key_id: Option<&[u8]>,
-        counter: Option<&[u8]>,
-    ) -> Result<(), Error> {
-        if key.len() + key_id.unwrap_or_default().len() >= KEYED_ABSORB_RATE {
-            return Err(Error::KeyTooLong);
-        }
-        let mut iv = [0u8; KEYED_ABSORB_RATE];
-        let key_len = key.len();
-        let mut key_id_len = 0;
-        iv[..key_len].copy_from_slice(key);
-        let mut iv_len = key_len;
-        if let Some(key_id) = key_id {
-            key_id_len = key_id.len();
-            iv[iv_len..iv_len + key_id_len].copy_from_slice(key_id);
-            iv_len += key_id_len;
-        }
-        iv[iv_len] = key_id_len as u8;
-        iv_len += 1;
-        self.absorb_any(&iv[..iv_len], KEYED_ABSORB_RATE, 0x02);
-        if let Some(counter) = counter {
-            self.absorb_any(counter, 1, 0x00)
-        }
-        Ok(())
-    }
-}
-
-impl internal::Xoodyak for XoodyakKeyed {
+impl internal::XoodyakCommon for XoodyakKeyed {
     #[inline(always)]
     fn state(&mut self) -> &mut Xoodoo {
         &mut self.state
@@ -81,9 +41,47 @@ impl internal::Xoodyak for XoodyakKeyed {
     }
 }
 
-impl Xoodyak for XoodyakKeyed {}
+impl XoodyakCommon for XoodyakKeyed {}
 
 impl XoodyakKeyed {
+    pub fn new(key: &[u8], key_id: Option<&[u8]>, counter: Option<&[u8]>) -> Result<Self, Error> {
+        let mut xoodyak = XoodyakKeyed {
+            state: Xoodoo::default(),
+            phase: Phase::Up,
+            mode: Mode::Keyed,
+        };
+        xoodyak.absorb_key(key, key_id, counter)?;
+        Ok(xoodyak)
+    }
+
+    pub fn absorb_key(
+        &mut self,
+        key: &[u8],
+        key_id: Option<&[u8]>,
+        counter: Option<&[u8]>,
+    ) -> Result<(), Error> {
+        if key.len() + key_id.unwrap_or_default().len() >= KEYED_ABSORB_RATE {
+            return Err(Error::KeyTooLong);
+        }
+        let mut iv = [0u8; KEYED_ABSORB_RATE];
+        let key_len = key.len();
+        let mut key_id_len = 0;
+        iv[..key_len].copy_from_slice(key);
+        let mut iv_len = key_len;
+        if let Some(key_id) = key_id {
+            key_id_len = key_id.len();
+            iv[iv_len..iv_len + key_id_len].copy_from_slice(key_id);
+            iv_len += key_id_len;
+        }
+        iv[iv_len] = key_id_len as u8;
+        iv_len += 1;
+        self.absorb_any(&iv[..iv_len], KEYED_ABSORB_RATE, 0x02);
+        if let Some(counter) = counter {
+            self.absorb_any(counter, 1, 0x00)
+        }
+        Ok(())
+    }
+
     pub fn ratchet(&mut self) {
         debug_assert_eq!(self.mode(), Mode::Keyed);
         let mut rolled_key = [0u8; RATCHET_RATE];

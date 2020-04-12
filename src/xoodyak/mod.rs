@@ -1,3 +1,5 @@
+#[allow(clippy::unit_arg)]
+mod any;
 mod hash;
 mod keyed;
 mod tag;
@@ -5,6 +7,7 @@ mod tag;
 use crate::error::*;
 use crate::xoodoo::*;
 
+pub use any::*;
 pub use hash::*;
 pub use keyed::*;
 pub use tag::*;
@@ -30,7 +33,7 @@ mod internal {
         Down,
     }
 
-    pub trait Xoodyak {
+    pub trait XoodyakCommon {
         fn state(&mut self) -> &mut Xoodoo;
         fn mode(&self) -> Mode;
         fn phase(&self) -> Phase;
@@ -113,7 +116,7 @@ mod internal {
     }
 }
 
-pub trait Xoodyak: internal::Xoodyak {
+pub trait XoodyakCommon: internal::XoodyakCommon {
     #[inline(always)]
     fn absorb(&mut self, bin: &[u8]) {
         self.absorb_any(bin, self.absorb_rate(), 0x03);
