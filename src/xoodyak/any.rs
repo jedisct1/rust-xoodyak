@@ -268,3 +268,5 @@ impl XoodyakAny {
             .aead_decrypt_in_place_to_vec(nonce, ad, in_out)
     }
 }
+
+impl XoodyakCommon for XoodyakAny {}
