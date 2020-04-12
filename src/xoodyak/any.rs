@@ -1,6 +1,7 @@
 use super::internal::{Mode, Phase};
 use super::*;
 
+#[derive(Clone, Debug)]
 pub enum XoodyakAny {
     Hash(XoodyakHash),
     Keyed(XoodyakKeyed),
