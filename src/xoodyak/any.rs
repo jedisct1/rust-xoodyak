@@ -99,22 +99,14 @@ impl XoodyakAny {
     pub fn aead_encrypt_detached(
         &mut self,
         out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
         bin: Option<&[u8]>,
     ) -> Result<Tag, Error> {
-        self.keyed()?.aead_encrypt_detached(out, nonce, ad, bin)
+        self.keyed()?.aead_encrypt_detached(out, bin)
     }
 
     #[inline]
-    pub fn aead_encrypt(
-        &mut self,
-        out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        bin: Option<&[u8]>,
-    ) -> Result<(), Error> {
-        self.keyed()?.aead_encrypt(out, nonce, ad, bin)
+    pub fn aead_encrypt(&mut self, out: &mut [u8], bin: Option<&[u8]>) -> Result<(), Error> {
+        self.keyed()?.aead_encrypt(out, bin)
     }
 
     #[inline]
@@ -122,45 +114,24 @@ impl XoodyakAny {
         &mut self,
         out: &mut [u8],
         auth_tag: &Tag,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
         bin: Option<&[u8]>,
     ) -> Result<(), Error> {
-        self.keyed()?
-            .aead_decrypt_detached(out, auth_tag, nonce, ad, bin)
+        self.keyed()?.aead_decrypt_detached(out, auth_tag, bin)
     }
 
     #[inline]
-    pub fn aead_decrypt(
-        &mut self,
-        out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        bin: &[u8],
-    ) -> Result<(), Error> {
-        self.keyed()?.aead_decrypt(out, nonce, ad, bin)
+    pub fn aead_decrypt(&mut self, out: &mut [u8], bin: &[u8]) -> Result<(), Error> {
+        self.keyed()?.aead_decrypt(out, bin)
     }
 
     #[inline]
-    pub fn aead_encrypt_in_place_detached(
-        &mut self,
-        in_out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-    ) -> Result<Tag, Error> {
-        Ok(self
-            .keyed()?
-            .aead_encrypt_in_place_detached(in_out, nonce, ad))
+    pub fn aead_encrypt_in_place_detached(&mut self, in_out: &mut [u8]) -> Result<Tag, Error> {
+        Ok(self.keyed()?.aead_encrypt_in_place_detached(in_out))
     }
 
     #[inline]
-    pub fn aead_encrypt_in_place(
-        &mut self,
-        in_out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-    ) -> Result<(), Error> {
-        self.keyed()?.aead_encrypt_in_place(in_out, nonce, ad)
+    pub fn aead_encrypt_in_place(&mut self, in_out: &mut [u8]) -> Result<(), Error> {
+        self.keyed()?.aead_encrypt_in_place(in_out)
     }
 
     #[inline]
@@ -168,21 +139,17 @@ impl XoodyakAny {
         &mut self,
         in_out: &mut [u8],
         auth_tag: &Tag,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
     ) -> Result<(), Error> {
         self.keyed()?
-            .aead_decrypt_in_place_detached(in_out, auth_tag, nonce, ad)
+            .aead_decrypt_in_place_detached(in_out, auth_tag)
     }
 
     #[inline]
     pub fn aead_decrypt_in_place<'t>(
         &mut self,
         in_out: &'t mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
     ) -> Result<&'t mut [u8], Error> {
-        self.keyed()?.aead_decrypt_in_place(in_out, nonce, ad)
+        self.keyed()?.aead_decrypt_in_place(in_out)
     }
 
     #[cfg(feature = "std")]
@@ -201,35 +168,22 @@ impl XoodyakAny {
     #[inline]
     pub fn aead_encrypt_to_vec_detached(
         &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
+
         bin: Option<&[u8]>,
     ) -> Result<(Vec<u8>, Tag), Error> {
-        self.keyed()?.aead_encrypt_to_vec_detached(nonce, ad, bin)
+        self.keyed()?.aead_encrypt_to_vec_detached(bin)
     }
 
     #[cfg(feature = "std")]
     #[inline]
-    pub fn aead_encrypt_to_vec(
-        &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        bin: Option<&[u8]>,
-    ) -> Result<Vec<u8>, Error> {
-        self.keyed()?.aead_encrypt_to_vec(nonce, ad, bin)
+    pub fn aead_encrypt_to_vec(&mut self, bin: Option<&[u8]>) -> Result<Vec<u8>, Error> {
+        self.keyed()?.aead_encrypt_to_vec(bin)
     }
 
     #[cfg(feature = "std")]
     #[inline]
-    pub fn aead_encrypt_in_place_to_vec(
-        &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        in_out: Vec<u8>,
-    ) -> Result<Vec<u8>, Error> {
-        Ok(self
-            .keyed()?
-            .aead_encrypt_in_place_to_vec(nonce, ad, in_out))
+    pub fn aead_encrypt_in_place_to_vec(&mut self, in_out: Vec<u8>) -> Result<Vec<u8>, Error> {
+        Ok(self.keyed()?.aead_encrypt_in_place_to_vec(in_out))
     }
 
     #[cfg(feature = "std")]
@@ -237,35 +191,22 @@ impl XoodyakAny {
     pub fn aead_decrypt_to_vec_detached(
         &mut self,
         auth_tag: Tag,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
+
         bin: Option<&[u8]>,
     ) -> Result<Vec<u8>, Error> {
-        self.keyed()?
-            .aead_decrypt_to_vec_detached(auth_tag, nonce, ad, bin)
+        self.keyed()?.aead_decrypt_to_vec_detached(auth_tag, bin)
     }
 
     #[cfg(feature = "std")]
     #[inline]
-    pub fn aead_decrypt_to_vec(
-        &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        bin: &[u8],
-    ) -> Result<Vec<u8>, Error> {
-        self.keyed()?.aead_decrypt_to_vec(nonce, ad, bin)
+    pub fn aead_decrypt_to_vec(&mut self, bin: &[u8]) -> Result<Vec<u8>, Error> {
+        self.keyed()?.aead_decrypt_to_vec(bin)
     }
 
     #[cfg(feature = "std")]
     #[inline]
-    pub fn aead_decrypt_in_place_to_vec(
-        &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        in_out: Vec<u8>,
-    ) -> Result<Vec<u8>, Error> {
-        self.keyed()?
-            .aead_decrypt_in_place_to_vec(nonce, ad, in_out)
+    pub fn aead_decrypt_in_place_to_vec(&mut self, in_out: Vec<u8>) -> Result<Vec<u8>, Error> {
+        self.keyed()?.aead_decrypt_in_place_to_vec(in_out)
     }
 }
 

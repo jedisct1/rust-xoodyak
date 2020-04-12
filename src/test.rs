@@ -2,7 +2,7 @@ use crate::*;
 
 #[test]
 fn test_keyed_empty() {
-    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
+    let mut st = XoodyakKeyed::new(b"key", None, None, None).unwrap();
     let mut out = [0u8; 32];
     st.squeeze(&mut out);
     assert_eq!(
@@ -42,7 +42,7 @@ fn test_unkeyed_empty() {
 
 #[test]
 fn test_encrypt() {
-    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
+    let mut st = XoodyakKeyed::new(b"key", None, None, None).unwrap();
     let st0 = st.clone();
     let m = b"message";
     let mut c = st.encrypt_to_vec(m).unwrap();
@@ -101,70 +101,65 @@ fn test_unkeyed_hash() {
 
 #[test]
 fn test_aead() {
-    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
+    let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    let mut st = XoodyakKeyed::new(b"key", Some(&nonce), None, None).unwrap();
     let st0 = st.clone();
     let m = b"message";
     let ad = b"ad";
-    let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-    let c = st
-        .aead_encrypt_to_vec(Some(&nonce), Some(ad), Some(m))
-        .unwrap();
+    st.absorb(ad);
+    let c = st.aead_encrypt_to_vec(Some(m)).unwrap();
 
     let mut st = st0.clone();
-    let m2 = st.aead_decrypt_to_vec(Some(&nonce), Some(ad), &c).unwrap();
+    st.absorb(ad);
+    let m2 = st.aead_decrypt_to_vec(&c).unwrap();
     assert_eq!(&m[..], &m2[..]);
 
     let mut st = st0.clone();
-    let xm2 = st.aead_decrypt_to_vec(Some(&nonce), None, &c);
+    let xm2 = st.aead_decrypt_to_vec(&m[..]);
     assert!(xm2.is_err());
 
-    let mut st = st0.clone();
-    let xm2 = st.aead_decrypt_to_vec(None, Some(ad), &c);
-    assert!(xm2.is_err());
-
-    let mut st = st0.clone();
-    let xm2 = st.aead_decrypt_to_vec(Some(&nonce), Some(ad), &m[..]);
-    assert!(xm2.is_err());
-
-    let mut st = XoodyakKeyed::new(b"Another key", None, None).unwrap();
-    let xm2 = st.aead_decrypt_to_vec(Some(&nonce), Some(ad), &m[..]);
+    let mut st = XoodyakKeyed::new(b"Another key", Some(&nonce), None, None).unwrap();
+    let xm2 = st.aead_decrypt_to_vec(&m[..]);
     assert!(xm2.is_err());
 }
 
 #[test]
 fn test_aead_in_place() {
-    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
-    let st0 = st.clone();
-    let m = b"message";
-    let ad = b"ad";
     let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-    let c = st.aead_encrypt_in_place_to_vec(Some(&nonce), Some(ad), m.to_vec());
+    let mut st = XoodyakKeyed::new(b"key", Some(&nonce), None, None).unwrap();
+    let st0 = st.clone();
+
+    let m = b"message";
+    st.absorb(b"ad");
+    let c = st.aead_encrypt_in_place_to_vec(m.to_vec());
 
     let mut st = st0.clone();
-    let m2 = st
-        .aead_decrypt_in_place_to_vec(Some(&nonce), Some(ad), c)
-        .unwrap();
+    let xm2 = st.aead_decrypt_in_place_to_vec(c.clone());
+    assert!(xm2.is_err());
+
+    let mut st = st0.clone();
+    st.absorb(b"ad");
+    let m2 = st.aead_decrypt_in_place_to_vec(c).unwrap();
     assert_eq!(&m[..], &m2[..]);
 }
 
 #[test]
 fn test_aead_detached() {
-    let mut st = XoodyakKeyed::new(b"key", None, None).unwrap();
+    let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    let mut st = XoodyakKeyed::new(b"key", Some(&nonce), None, None).unwrap();
     let st0 = st.clone();
     let m = b"message";
-    let ad = b"ad";
-    let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
-    let (c, auth_tag) = st
-        .aead_encrypt_to_vec_detached(Some(&nonce), Some(ad), Some(m))
-        .unwrap();
+    st.absorb(b"ad");
+    let (c, auth_tag) = st.aead_encrypt_to_vec_detached(Some(m)).unwrap();
 
     let mut st = st0.clone();
     let expected_tag = [
         53, 10, 136, 11, 55, 200, 131, 172, 29, 145, 112, 145, 183, 91, 19, 127,
     ];
     assert_eq!(auth_tag.as_ref(), expected_tag);
+    st.absorb(b"ad");
     let m2 = st
-        .aead_decrypt_to_vec_detached(expected_tag.into(), Some(&nonce), Some(ad), Some(&c))
+        .aead_decrypt_to_vec_detached(expected_tag.into(), Some(&c))
         .unwrap();
     assert_eq!(m2, m);
 }

@@ -44,13 +44,21 @@ impl internal::XoodyakCommon for XoodyakKeyed {
 impl XoodyakCommon for XoodyakKeyed {}
 
 impl XoodyakKeyed {
-    pub fn new(key: &[u8], key_id: Option<&[u8]>, counter: Option<&[u8]>) -> Result<Self, Error> {
+    pub fn new(
+        key: &[u8],
+        nonce: Option<&[u8]>,
+        key_id: Option<&[u8]>,
+        counter: Option<&[u8]>,
+    ) -> Result<Self, Error> {
         let mut xoodyak = XoodyakKeyed {
             state: Xoodoo::default(),
             phase: Phase::Up,
             mode: Mode::Keyed,
         };
         xoodyak.absorb_key(key, key_id, counter)?;
+        if let Some(nonce) = nonce {
+            xoodyak.absorb(nonce)
+        }
         Ok(xoodyak)
     }
 
@@ -160,33 +168,23 @@ impl XoodyakKeyed {
     pub fn aead_encrypt_detached(
         &mut self,
         out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
         bin: Option<&[u8]>,
     ) -> Result<Tag, Error> {
         if out.len() < bin.unwrap_or_default().len() {
             return Err(Error::InvalidLength);
         }
-        self.absorb(nonce.unwrap_or_default());
-        self.absorb(ad.unwrap_or_default());
         self.encrypt(out, bin.unwrap_or_default())?;
         let mut auth_tag = Tag::default();
         self.squeeze(auth_tag.inner_mut());
         Ok(auth_tag)
     }
 
-    pub fn aead_encrypt(
-        &mut self,
-        out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        bin: Option<&[u8]>,
-    ) -> Result<(), Error> {
+    pub fn aead_encrypt(&mut self, out: &mut [u8], bin: Option<&[u8]>) -> Result<(), Error> {
         let ct_len = bin.unwrap_or_default().len();
         if out.len() < ct_len + AUTH_TAG_BYTES {
             return Err(Error::InvalidLength);
         }
-        let auth_tag = self.aead_encrypt_detached(out, nonce, ad, bin)?;
+        let auth_tag = self.aead_encrypt_detached(out, bin)?;
         out[ct_len..ct_len + AUTH_TAG_BYTES].copy_from_slice(auth_tag.as_ref());
         Ok(())
     }
@@ -195,15 +193,11 @@ impl XoodyakKeyed {
         &mut self,
         out: &mut [u8],
         auth_tag: &Tag,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
         bin: Option<&[u8]>,
     ) -> Result<(), Error> {
         if out.len() < bin.unwrap_or_default().len() {
             return Err(Error::InvalidLength);
         }
-        self.absorb(nonce.unwrap_or_default());
-        self.absorb(ad.unwrap_or_default());
         self.decrypt(out, bin.unwrap_or_default())?;
         let mut computed_tag = Tag::default();
         self.squeeze(computed_tag.inner_mut());
@@ -214,13 +208,7 @@ impl XoodyakKeyed {
         Err(Error::TagMismatch)
     }
 
-    pub fn aead_decrypt(
-        &mut self,
-        out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        bin: &[u8],
-    ) -> Result<(), Error> {
+    pub fn aead_decrypt(&mut self, out: &mut [u8], bin: &[u8]) -> Result<(), Error> {
         let ct_len = bin
             .len()
             .checked_sub(AUTH_TAG_BYTES)
@@ -232,35 +220,23 @@ impl XoodyakKeyed {
         auth_tag_bin.copy_from_slice(&bin[ct_len..]);
         let auth_tag = Tag::from(auth_tag_bin);
         let ct = &bin[..ct_len];
-        self.aead_decrypt_detached(out, &auth_tag, nonce, ad, Some(ct))?;
+        self.aead_decrypt_detached(out, &auth_tag, Some(ct))?;
         Ok(())
     }
 
-    pub fn aead_encrypt_in_place_detached(
-        &mut self,
-        in_out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-    ) -> Tag {
-        self.absorb(nonce.unwrap_or_default());
-        self.absorb(ad.unwrap_or_default());
+    pub fn aead_encrypt_in_place_detached(&mut self, in_out: &mut [u8]) -> Tag {
         self.encrypt_in_place(in_out);
         let mut auth_tag = Tag::default();
         self.squeeze(auth_tag.inner_mut());
         auth_tag
     }
 
-    pub fn aead_encrypt_in_place(
-        &mut self,
-        in_out: &mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-    ) -> Result<(), Error> {
+    pub fn aead_encrypt_in_place(&mut self, in_out: &mut [u8]) -> Result<(), Error> {
         let ct_len = in_out
             .len()
             .checked_sub(AUTH_TAG_BYTES)
             .ok_or(Error::InvalidLength)?;
-        let auth_tag = self.aead_encrypt_in_place_detached(&mut in_out[..ct_len], nonce, ad);
+        let auth_tag = self.aead_encrypt_in_place_detached(&mut in_out[..ct_len]);
         in_out[ct_len..].copy_from_slice(auth_tag.as_ref());
         Ok(())
     }
@@ -269,11 +245,7 @@ impl XoodyakKeyed {
         &mut self,
         in_out: &mut [u8],
         auth_tag: &Tag,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
     ) -> Result<(), Error> {
-        self.absorb(nonce.unwrap_or_default());
-        self.absorb(ad.unwrap_or_default());
         self.decrypt_in_place(in_out);
         let mut computed_tag = Tag::default();
         self.squeeze(computed_tag.inner_mut());
@@ -287,8 +259,6 @@ impl XoodyakKeyed {
     pub fn aead_decrypt_in_place<'t>(
         &mut self,
         in_out: &'t mut [u8],
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
     ) -> Result<&'t mut [u8], Error> {
         let ct_len = in_out
             .len()
@@ -298,7 +268,7 @@ impl XoodyakKeyed {
         auth_tag_bin.copy_from_slice(&in_out[ct_len..]);
         let ct = &mut in_out[..ct_len];
         let auth_tag = Tag::from(auth_tag_bin);
-        self.aead_decrypt_in_place_detached(ct, &auth_tag, nonce, ad)?;
+        self.aead_decrypt_in_place_detached(ct, &auth_tag)?;
         Ok(ct)
     }
 
@@ -319,37 +289,26 @@ impl XoodyakKeyed {
     #[cfg(feature = "std")]
     pub fn aead_encrypt_to_vec_detached(
         &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
+
         bin: Option<&[u8]>,
     ) -> Result<(Vec<u8>, Tag), Error> {
         let mut out = vec![0u8; bin.unwrap_or_default().len()];
-        let auth_tag = self.aead_encrypt_detached(&mut out, nonce, ad, bin)?;
+        let auth_tag = self.aead_encrypt_detached(&mut out, bin)?;
         Ok((out, auth_tag))
     }
 
     #[cfg(feature = "std")]
-    pub fn aead_encrypt_to_vec(
-        &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        bin: Option<&[u8]>,
-    ) -> Result<Vec<u8>, Error> {
+    pub fn aead_encrypt_to_vec(&mut self, bin: Option<&[u8]>) -> Result<Vec<u8>, Error> {
         let mut out = vec![0u8; bin.unwrap_or_default().len() + AUTH_TAG_BYTES];
-        self.aead_encrypt(&mut out, nonce, ad, bin)?;
+        self.aead_encrypt(&mut out, bin)?;
         Ok(out)
     }
 
     #[cfg(feature = "std")]
-    pub fn aead_encrypt_in_place_to_vec(
-        &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        mut in_out: Vec<u8>,
-    ) -> Vec<u8> {
+    pub fn aead_encrypt_in_place_to_vec(&mut self, mut in_out: Vec<u8>) -> Vec<u8> {
         let ct_len = in_out.len();
         in_out.resize_with(ct_len + AUTH_TAG_BYTES, || 0);
-        self.aead_encrypt_in_place(&mut in_out, nonce, ad).unwrap();
+        self.aead_encrypt_in_place(&mut in_out).unwrap();
         in_out
     }
 
@@ -357,43 +316,31 @@ impl XoodyakKeyed {
     pub fn aead_decrypt_to_vec_detached(
         &mut self,
         auth_tag: Tag,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
         bin: Option<&[u8]>,
     ) -> Result<Vec<u8>, Error> {
         let mut out = vec![0u8; bin.unwrap_or_default().len()];
-        self.aead_decrypt_detached(&mut out, &auth_tag, nonce, ad, bin)?;
+        self.aead_decrypt_detached(&mut out, &auth_tag, bin)?;
         Ok(out)
     }
 
     #[cfg(feature = "std")]
-    pub fn aead_decrypt_to_vec(
-        &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        bin: &[u8],
-    ) -> Result<Vec<u8>, Error> {
+    pub fn aead_decrypt_to_vec(&mut self, bin: &[u8]) -> Result<Vec<u8>, Error> {
         let ct_len = bin
             .len()
             .checked_sub(AUTH_TAG_BYTES)
             .ok_or(Error::InvalidLength)?;
         let mut out = vec![0u8; ct_len];
-        self.aead_decrypt(&mut out, nonce, ad, bin)?;
+        self.aead_decrypt(&mut out, bin)?;
         Ok(out)
     }
 
     #[cfg(feature = "std")]
-    pub fn aead_decrypt_in_place_to_vec(
-        &mut self,
-        nonce: Option<&[u8]>,
-        ad: Option<&[u8]>,
-        mut in_out: Vec<u8>,
-    ) -> Result<Vec<u8>, Error> {
+    pub fn aead_decrypt_in_place_to_vec(&mut self, mut in_out: Vec<u8>) -> Result<Vec<u8>, Error> {
         let ct_len = in_out
             .len()
             .checked_sub(AUTH_TAG_BYTES)
             .ok_or(Error::InvalidLength)?;
-        self.aead_decrypt_in_place(&mut in_out, nonce, ad)?;
+        self.aead_decrypt_in_place(&mut in_out)?;
         in_out.truncate(ct_len);
         Ok(in_out)
     }
