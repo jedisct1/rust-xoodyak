@@ -10,7 +10,6 @@ license = "MIT"
 homepage = "https://github.com/jedisct1/rust-xoodyak"
 repository = "https://github.com/jedisct1/rust-xoodyak"
 categories = ["no-std", "cryptography", "wasm"]
-readme = "README.md"
 
 [features]
 default = ["std"]
