@@ -55,21 +55,21 @@ impl XoodyakKeyed {
             phase: Phase::Up,
             mode: Mode::Keyed,
         };
-        xoodyak.absorb_key(key, key_id, counter)?;
-        if let Some(nonce) = nonce {
-            xoodyak.absorb(nonce)
-        }
+        xoodyak.absorb_key_and_nonce(key, key_id, nonce, counter)?;
         Ok(xoodyak)
     }
 
-    pub fn absorb_key(
+    pub fn absorb_key_and_nonce(
         &mut self,
         key: &[u8],
         key_id: Option<&[u8]>,
+        nonce: Option<&[u8]>,
         counter: Option<&[u8]>,
     ) -> Result<(), Error> {
-        if key.len() + key_id.unwrap_or_default().len() >= KEYED_ABSORB_RATE {
-            return Err(Error::KeyTooLong);
+        if key.len() + key_id.unwrap_or_default().len() + nonce.unwrap_or_default().len() + 2
+            > KEYED_ABSORB_RATE
+        {
+            return Err(Error::InvalidParameterLength);
         }
         let mut iv = [0u8; KEYED_ABSORB_RATE];
         let key_len = key.len();
@@ -82,6 +82,14 @@ impl XoodyakKeyed {
             iv_len += key_id_len;
         }
         iv[iv_len] = key_id_len as u8;
+        iv_len += 1;
+        let mut nonce_len = 0;
+        if let Some(nonce) = nonce {
+            nonce_len = nonce.len();
+            iv[iv_len..iv_len + nonce_len].copy_from_slice(nonce);
+            iv_len += nonce_len;
+        }
+        iv[iv_len] = nonce_len as u8;
         iv_len += 1;
         self.absorb_any(&iv[..iv_len], KEYED_ABSORB_RATE, 0x02);
         if let Some(counter) = counter {
@@ -100,7 +108,7 @@ impl XoodyakKeyed {
     pub fn encrypt(&mut self, out: &mut [u8], bin: &[u8]) -> Result<(), Error> {
         debug_assert_eq!(self.mode(), Mode::Keyed);
         if out.len() < bin.len() {
-            return Err(Error::InvalidLength);
+            return Err(Error::InvalidBufferLength);
         }
         let mut cu = 0x80;
         for (out_chunk, chunk) in out
@@ -120,7 +128,7 @@ impl XoodyakKeyed {
     pub fn decrypt(&mut self, out: &mut [u8], bin: &[u8]) -> Result<(), Error> {
         debug_assert_eq!(self.mode(), Mode::Keyed);
         if out.len() < bin.len() {
-            return Err(Error::InvalidLength);
+            return Err(Error::InvalidBufferLength);
         }
         let mut cu = 0x80;
         for (out_chunk, chunk) in out
@@ -171,7 +179,7 @@ impl XoodyakKeyed {
         bin: Option<&[u8]>,
     ) -> Result<Tag, Error> {
         if out.len() < bin.unwrap_or_default().len() {
-            return Err(Error::InvalidLength);
+            return Err(Error::InvalidBufferLength);
         }
         self.encrypt(out, bin.unwrap_or_default())?;
         let mut auth_tag = Tag::default();
@@ -182,7 +190,7 @@ impl XoodyakKeyed {
     pub fn aead_encrypt(&mut self, out: &mut [u8], bin: Option<&[u8]>) -> Result<(), Error> {
         let ct_len = bin.unwrap_or_default().len();
         if out.len() < ct_len + AUTH_TAG_BYTES {
-            return Err(Error::InvalidLength);
+            return Err(Error::InvalidBufferLength);
         }
         let auth_tag = self.aead_encrypt_detached(out, bin)?;
         out[ct_len..ct_len + AUTH_TAG_BYTES].copy_from_slice(auth_tag.as_ref());
@@ -196,7 +204,7 @@ impl XoodyakKeyed {
         bin: Option<&[u8]>,
     ) -> Result<(), Error> {
         if out.len() < bin.unwrap_or_default().len() {
-            return Err(Error::InvalidLength);
+            return Err(Error::InvalidBufferLength);
         }
         self.decrypt(out, bin.unwrap_or_default())?;
         let mut computed_tag = Tag::default();
@@ -212,9 +220,9 @@ impl XoodyakKeyed {
         let ct_len = bin
             .len()
             .checked_sub(AUTH_TAG_BYTES)
-            .ok_or(Error::InvalidLength)?;
+            .ok_or(Error::InvalidBufferLength)?;
         if bin.len() < ct_len {
-            return Err(Error::InvalidLength);
+            return Err(Error::InvalidBufferLength);
         }
         let mut auth_tag_bin = [0u8; AUTH_TAG_BYTES];
         auth_tag_bin.copy_from_slice(&bin[ct_len..]);
@@ -235,7 +243,7 @@ impl XoodyakKeyed {
         let ct_len = in_out
             .len()
             .checked_sub(AUTH_TAG_BYTES)
-            .ok_or(Error::InvalidLength)?;
+            .ok_or(Error::InvalidBufferLength)?;
         let auth_tag = self.aead_encrypt_in_place_detached(&mut in_out[..ct_len]);
         in_out[ct_len..].copy_from_slice(auth_tag.as_ref());
         Ok(())
@@ -263,7 +271,7 @@ impl XoodyakKeyed {
         let ct_len = in_out
             .len()
             .checked_sub(AUTH_TAG_BYTES)
-            .ok_or(Error::InvalidLength)?;
+            .ok_or(Error::InvalidBufferLength)?;
         let mut auth_tag_bin = [0u8; AUTH_TAG_BYTES];
         auth_tag_bin.copy_from_slice(&in_out[ct_len..]);
         let ct = &mut in_out[..ct_len];
@@ -328,7 +336,7 @@ impl XoodyakKeyed {
         let ct_len = bin
             .len()
             .checked_sub(AUTH_TAG_BYTES)
-            .ok_or(Error::InvalidLength)?;
+            .ok_or(Error::InvalidBufferLength)?;
         let mut out = vec![0u8; ct_len];
         self.aead_decrypt(&mut out, bin)?;
         Ok(out)
@@ -339,7 +347,7 @@ impl XoodyakKeyed {
         let ct_len = in_out
             .len()
             .checked_sub(AUTH_TAG_BYTES)
-            .ok_or(Error::InvalidLength)?;
+            .ok_or(Error::InvalidBufferLength)?;
         self.aead_decrypt_in_place(&mut in_out)?;
         in_out.truncate(ct_len);
         Ok(in_out)

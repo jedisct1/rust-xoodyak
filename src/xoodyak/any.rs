@@ -61,13 +61,15 @@ impl XoodyakAny {
     }
 
     #[inline]
-    pub fn absorb_key(
+    pub fn absorb_key_and_nonce(
         &mut self,
         key: &[u8],
         key_id: Option<&[u8]>,
+        nonce: Option<&[u8]>,
         counter: Option<&[u8]>,
     ) -> Result<(), Error> {
-        self.keyed()?.absorb_key(key, key_id, counter)
+        self.keyed()?
+            .absorb_key_and_nonce(key, key_id, nonce, counter)
     }
 
     #[inline]
