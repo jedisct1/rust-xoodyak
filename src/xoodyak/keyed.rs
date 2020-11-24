@@ -66,31 +66,29 @@ impl XoodyakKeyed {
         nonce: Option<&[u8]>,
         counter: Option<&[u8]>,
     ) -> Result<(), Error> {
-        if key.len() + key_id.unwrap_or_default().len() + nonce.unwrap_or_default().len() + 2
-            > KEYED_ABSORB_RATE
-        {
+        let key_id_len = key_id.unwrap_or_default().len();
+        let nonce_len = nonce.unwrap_or_default().len();
+        if key.len() + 1 + key_id_len + nonce_len > KEYED_ABSORB_RATE {
             return Err(Error::InvalidParameterLength);
         }
         let mut iv = [0u8; KEYED_ABSORB_RATE];
         let key_len = key.len();
-        let mut key_id_len = 0;
         iv[..key_len].copy_from_slice(key);
         let mut iv_len = key_len;
+
+        iv[iv_len] = key_id_len as u8;
+        iv_len += 1;
         if let Some(key_id) = key_id {
-            key_id_len = key_id.len();
+            let key_id_len = key_id.len();
             iv[iv_len..iv_len + key_id_len].copy_from_slice(key_id);
             iv_len += key_id_len;
         }
-        iv[iv_len] = key_id_len as u8;
-        iv_len += 1;
-        let mut nonce_len = 0;
+
         if let Some(nonce) = nonce {
-            nonce_len = nonce.len();
+            let nonce_len = nonce.len();
             iv[iv_len..iv_len + nonce_len].copy_from_slice(nonce);
             iv_len += nonce_len;
         }
-        iv[iv_len] = nonce_len as u8;
-        iv_len += 1;
         self.absorb_any(&iv[..iv_len], KEYED_ABSORB_RATE, 0x02);
         if let Some(counter) = counter {
             self.absorb_any(counter, 1, 0x00)
