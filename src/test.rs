@@ -61,7 +61,7 @@ fn test_encrypt() {
     st.decrypt_in_place(&mut c);
     assert_eq!(&m[..], &c[..]);
 
-    let mut st = st0.clone();
+    let mut st = st0;
     st.encrypt_in_place(&mut c);
     assert_eq!(c0, c);
 
@@ -114,7 +114,7 @@ fn test_aead() {
     let m2 = st.aead_decrypt_to_vec(&c).unwrap();
     assert_eq!(&m[..], &m2[..]);
 
-    let mut st = st0.clone();
+    let mut st = st0;
     let xm2 = st.aead_decrypt_to_vec(&m[..]);
     assert!(xm2.is_err());
 
@@ -137,7 +137,7 @@ fn test_aead_in_place() {
     let xm2 = st.aead_decrypt_in_place_to_vec(c.clone());
     assert!(xm2.is_err());
 
-    let mut st = st0.clone();
+    let mut st = st0;
     st.absorb(b"ad");
     let m2 = st.aead_decrypt_in_place_to_vec(c).unwrap();
     assert_eq!(&m[..], &m2[..]);
@@ -152,7 +152,7 @@ fn test_aead_detached() {
     st.absorb(b"ad");
     let (c, auth_tag) = st.aead_encrypt_to_vec_detached(Some(m)).unwrap();
 
-    let mut st = st0.clone();
+    let mut st = st0;
     let expected_tag = [
         36, 121, 60, 174, 100, 25, 90, 66, 125, 227, 129, 9, 201, 157, 170, 64,
     ];

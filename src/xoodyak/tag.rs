@@ -48,10 +48,10 @@ impl AsRef<[u8]> for Tag {
     }
 }
 
-impl Into<[u8; AUTH_TAG_BYTES]> for Tag {
+impl From<Tag> for [u8; AUTH_TAG_BYTES] {
     #[inline(always)]
-    fn into(self) -> [u8; AUTH_TAG_BYTES] {
-        self.0
+    fn from(tag: Tag) -> Self {
+        tag.0
     }
 }
 
