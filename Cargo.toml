@@ -17,7 +17,7 @@ std = []
 
 [dependencies]
 rawbytes = "0.1"
-zeroize = "1.3"
+zeroize = "1.4"
 
 [dev-dependencies]
 criterion = "0.3"
