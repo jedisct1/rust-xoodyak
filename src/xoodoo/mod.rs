@@ -1,7 +1,9 @@
 use rawbytes::RawBytes;
 use zeroize::Zeroize;
 
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(target_arch = "aarch64")]
+mod impl_aarch64;
+#[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
 mod impl_portable;
 #[cfg(target_arch = "x86_64")]
 mod impl_x86_64;
