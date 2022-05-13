@@ -1,6 +1,6 @@
-use super::{Xoodoo, ROUND_KEYS};
-
 use core::arch::x86_64::*;
+
+use super::{Xoodoo, ROUND_KEYS};
 
 impl Xoodoo {
     #[allow(
