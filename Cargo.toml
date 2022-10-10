@@ -17,10 +17,10 @@ std = []
 
 [dependencies]
 rawbytes = "0.1"
-zeroize = "1.4"
+zeroize = "1.5"
 
 [dev-dependencies]
-criterion = { version = "0.3", features = ["html_reports"] }
+criterion = { version = "0.4", features = ["html_reports"] }
 
 [profile.release]
 codegen-units = 1
