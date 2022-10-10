@@ -20,7 +20,7 @@ rawbytes = "0.1"
 zeroize = "1.5"
 
 [dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports"] }
+benchmark-simple = "0.1.7"
 
 [profile.release]
 codegen-units = 1
