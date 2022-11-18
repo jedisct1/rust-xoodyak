@@ -1,6 +1,6 @@
 [package]
 name = "xoodyak"
-version = "0.7.4"
+version = "0.8.0"
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
 description = "Xoodyak / Xoodoo - A versatile cryptographic scheme that can be used for hashing, encryption, MAC computation and authenticated encryption."
@@ -20,7 +20,7 @@ rawbytes = "0.1"
 zeroize = "1.5"
 
 [dev-dependencies]
-criterion = { version = "0.4", features = ["html_reports"] }
+benchmark-simple = "0.1.7"
 
 [profile.release]
 codegen-units = 1

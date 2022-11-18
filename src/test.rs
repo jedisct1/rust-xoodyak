@@ -154,7 +154,7 @@ fn test_aead_detached() {
 
     let mut st = st0;
     let expected_tag = [
-        36, 121, 60, 174, 100, 25, 90, 66, 125, 227, 129, 9, 201, 157, 170, 64,
+        12, 91, 0, 120, 191, 214, 119, 66, 122, 225, 184, 239, 213, 214, 247, 57,
     ];
     assert_eq!(auth_tag.as_ref(), expected_tag);
     st.absorb(b"ad");
