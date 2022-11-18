@@ -69,8 +69,8 @@ mod internal {
                 self.add_byte(cu, 47);
             }
             self.permute();
-            if let Some(mut out) = out {
-                self.extract_bytes(&mut out);
+            if let Some(out) = out {
+                self.extract_bytes(out);
             }
         }
 
@@ -79,7 +79,7 @@ mod internal {
             debug_assert!(bin.as_ref().map(|x| x.len()).unwrap_or(0) <= self.absorb_rate());
             self.set_phase(Phase::Down);
             if let Some(bin) = bin {
-                self.add_bytes(&bin);
+                self.add_bytes(bin);
                 self.add_byte(0x01, bin.len());
             } else {
                 self.add_byte(0x01, 0);
