@@ -17,7 +17,7 @@ std = []
 
 [dependencies]
 rawbytes = "0.1"
-zeroize = "1.5"
+zeroize = "1.6"
 
 [dev-dependencies]
 benchmark-simple = "0.1.7"
