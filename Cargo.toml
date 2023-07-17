@@ -20,7 +20,7 @@ bytemuck = "1.13.1"
 zeroize = "1.6"
 
 [dev-dependencies]
-benchmark-simple = "0.1.7"
+benchmark-simple = "0.1.8"
 
 [profile.release]
 codegen-units = 1
