@@ -1,4 +1,3 @@
-use rawbytes::RawBytes;
 use zeroize::Zeroize;
 
 #[cfg(not(target_arch = "x86_64"))]
@@ -19,15 +18,13 @@ pub struct Xoodoo {
 impl Xoodoo {
     #[inline(always)]
     fn bytes_view(&self) -> &[u8] {
-        let view = RawBytes::bytes_view(&self.st);
-        debug_assert_eq!(view.len(), 48);
+        let view: &[u8] = bytemuck::bytes_of(&self.st);
         view
     }
 
     #[inline(always)]
     fn bytes_view_mut(&mut self) -> &mut [u8] {
-        let view = RawBytes::bytes_view_mut(&mut self.st);
-        debug_assert_eq!(view.len(), 48);
+        let view = bytemuck::bytes_of_mut(&mut self.st);
         view
     }
 
