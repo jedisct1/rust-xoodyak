@@ -62,7 +62,9 @@ impl Xoodoo {
 
     #[cfg(target_endian = "little")]
     #[inline(always)]
-    fn endian_swap(&mut self) {}
+    fn endian_swap(&mut self) {
+        _ = self
+    }
 
     #[inline]
     pub fn from_bytes(bytes: [u8; 48]) -> Self {
