@@ -16,7 +16,6 @@ default = ["std"]
 std = []
 
 [dependencies]
-bytemuck = "1.13.1"
 zeroize = "1.6"
 
 [dev-dependencies]
