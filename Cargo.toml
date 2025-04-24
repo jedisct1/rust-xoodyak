@@ -16,10 +16,10 @@ default = ["std"]
 std = []
 
 [dependencies]
-zeroize = "1.6"
+zeroize = "1.8"
 
 [dev-dependencies]
-benchmark-simple = "0.1.8"
+benchmark-simple = "0.1.10"
 
 [profile.release]
 codegen-units = 1
