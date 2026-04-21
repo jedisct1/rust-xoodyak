@@ -22,8 +22,8 @@ fn test_unkeyed_empty() {
     assert_eq!(
         out,
         [
-            141, 216, 213, 137, 191, 252, 99, 169, 25, 45, 35, 27, 20, 160, 165, 255, 204, 246, 41,
-            214, 87, 39, 76, 114, 39, 130, 131, 52, 124, 189, 128, 53
+            141, 216, 213, 137, 191, 252, 99, 169, 25, 45, 35, 27, 20, 160, 165, 255, 204, 246,
+            41, 214, 87, 39, 76, 114, 39, 130, 131, 52, 124, 189, 128, 53
         ]
     );
 
@@ -45,18 +45,21 @@ fn test_encrypt() {
     let mut st = XoodyakKeyed::new(b"key", None, None, None).unwrap();
     let st0 = st.clone();
     let m = b"message";
-    let mut c = st.encrypt_to_vec(m).unwrap();
+    let mut c = [0u8; 7];
+    st.encrypt(&mut c, m).unwrap();
 
     let mut st = st0.clone();
-    let m2 = st.decrypt_to_vec(&c).unwrap();
-    assert_eq!(&m[..], m2.as_slice());
+    let mut m2 = [0u8; 7];
+    st.decrypt(&mut m2, &c).unwrap();
+    assert_eq!(&m[..], &m2[..]);
 
     let mut st = st0.clone();
     st.ratchet();
-    let m2 = st.decrypt_to_vec(&c).unwrap();
-    assert_ne!(&m[..], m2.as_slice());
+    let mut m2 = [0u8; 7];
+    st.decrypt(&mut m2, &c).unwrap();
+    assert_ne!(&m[..], &m2[..]);
 
-    let c0 = c.clone();
+    let c0 = c;
     let mut st = st0.clone();
     st.decrypt_in_place(&mut c);
     assert_eq!(&m[..], &c[..]);
@@ -65,12 +68,13 @@ fn test_encrypt() {
     st.encrypt_in_place(&mut c);
     assert_eq!(c0, c);
 
-    let tag = st.squeeze_to_vec(32);
+    let mut tag = [0u8; 32];
+    st.squeeze(&mut tag);
     assert_eq!(
         tag,
         [
-            10, 175, 140, 82, 142, 109, 23, 111, 201, 232, 32, 52, 122, 46, 254, 206, 236, 54, 97,
-            165, 40, 85, 166, 91, 124, 88, 26, 144, 100, 250, 243, 157
+            10, 175, 140, 82, 142, 109, 23, 111, 201, 232, 32, 52, 122, 46, 254, 206, 236, 54,
+            97, 165, 40, 85, 166, 91, 124, 88, 26, 144, 100, 250, 243, 157
         ]
     );
 }
@@ -80,16 +84,18 @@ fn test_unkeyed_hash() {
     let mut st = XoodyakHash::new();
     let m = b"Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
     st.absorb(&m[..]);
-    let hash = st.squeeze_to_vec(32);
+    let mut hash = [0u8; 32];
+    st.squeeze(&mut hash);
     assert_eq!(
         hash,
         [
-            144, 82, 141, 27, 59, 215, 34, 104, 197, 106, 251, 142, 112, 235, 111, 168, 19, 6, 112,
-            222, 160, 168, 230, 38, 27, 229, 248, 179, 94, 227, 247, 25
+            144, 82, 141, 27, 59, 215, 34, 104, 197, 106, 251, 142, 112, 235, 111, 168, 19, 6,
+            112, 222, 160, 168, 230, 38, 27, 229, 248, 179, 94, 227, 247, 25
         ]
     );
     st.absorb(&m[..]);
-    let hash = st.squeeze_to_vec(32);
+    let mut hash = [0u8; 32];
+    st.squeeze(&mut hash);
     assert_eq!(
         hash,
         [
@@ -107,20 +113,24 @@ fn test_aead() {
     let m = b"message";
     let ad = b"ad";
     st.absorb(ad);
-    let c = st.aead_encrypt_to_vec(Some(m)).unwrap();
+    let mut c = [0u8; 7 + XOODYAK_AUTH_TAG_BYTES];
+    st.aead_encrypt(&mut c, Some(m)).unwrap();
 
     let mut st = st0.clone();
     st.absorb(ad);
-    let m2 = st.aead_decrypt_to_vec(&c).unwrap();
+    let mut m2 = [0u8; 7];
+    st.aead_decrypt(&mut m2, &c).unwrap();
     assert_eq!(&m[..], &m2[..]);
 
     let mut st = st0;
-    let xm2 = st.aead_decrypt_to_vec(&m[..]);
-    assert!(xm2.is_err());
+    let mut m2 = [0u8; 7];
+    let result = st.aead_decrypt(&mut m2, &m[..]);
+    assert!(result.is_err());
 
     let mut st = XoodyakKeyed::new(b"Another key", Some(&nonce), None, None).unwrap();
-    let xm2 = st.aead_decrypt_to_vec(&m[..]);
-    assert!(xm2.is_err());
+    let mut m2 = [0u8; 7];
+    let result = st.aead_decrypt(&mut m2, &m[..]);
+    assert!(result.is_err());
 }
 
 #[test]
@@ -131,15 +141,18 @@ fn test_aead_in_place() {
 
     let m = b"message";
     st.absorb(b"ad");
-    let c = st.aead_encrypt_in_place_to_vec(m.to_vec());
+    let mut buf = [0u8; 7 + XOODYAK_AUTH_TAG_BYTES];
+    buf[..7].copy_from_slice(m);
+    st.aead_encrypt_in_place(&mut buf).unwrap();
 
     let mut st = st0.clone();
-    let xm2 = st.aead_decrypt_in_place_to_vec(c.clone());
-    assert!(xm2.is_err());
+    let mut buf2 = buf;
+    let result = st.aead_decrypt_in_place(&mut buf2);
+    assert!(result.is_err());
 
     let mut st = st0;
     st.absorb(b"ad");
-    let m2 = st.aead_decrypt_in_place_to_vec(c).unwrap();
+    let m2 = st.aead_decrypt_in_place(&mut buf).unwrap();
     assert_eq!(&m[..], &m2[..]);
 }
 
@@ -150,7 +163,8 @@ fn test_aead_detached() {
     let st0 = st.clone();
     let m = b"message";
     st.absorb(b"ad");
-    let (c, auth_tag) = st.aead_encrypt_to_vec_detached(Some(m)).unwrap();
+    let mut c = [0u8; 7];
+    let auth_tag = st.aead_encrypt_detached(&mut c, Some(m)).unwrap();
 
     let mut st = st0;
     let expected_tag = [
@@ -158,8 +172,8 @@ fn test_aead_detached() {
     ];
     assert_eq!(auth_tag.as_ref(), expected_tag);
     st.absorb(b"ad");
-    let m2 = st
-        .aead_decrypt_to_vec_detached(expected_tag.into(), Some(&c))
+    let mut m2 = [0u8; 7];
+    st.aead_decrypt_detached(&mut m2, &expected_tag.into(), Some(&c))
         .unwrap();
-    assert_eq!(m2, m);
+    assert_eq!(&m2[..], &m[..]);
 }

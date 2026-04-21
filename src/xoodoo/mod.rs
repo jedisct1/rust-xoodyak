@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use core::convert::TryInto;
 use zeroize::Zeroize;
 
 #[cfg(not(target_arch = "x86_64"))]

@@ -1,4 +1,4 @@
-use std::fmt::{self, Display};
+use core::fmt::{self, Display};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Error {
@@ -8,6 +8,7 @@ pub enum Error {
     TagMismatch,
 }
 
+#[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
 impl Display for Error {
