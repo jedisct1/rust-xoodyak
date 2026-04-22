@@ -4,14 +4,15 @@ use core::arch::asm;
 
 #[cfg(all(target_arch = "arm", target_has_atomic = "32"))]
 impl Xoodoo {
+    /// Optimized Xoodoo permutation for ARMv7-M (Thumb-2).
+    /// This version keeps Plane A and Plane B in registers (8 total) to maximize speed
+    /// while keeping register pressure low enough for reliable compilation on all
+    /// Thumb-2 targets. Plane C is handled via memory operations to save registers.
     #[allow(clippy::many_single_char_names)]
     pub fn permute(&mut self) {
-        let st_ptr = self.st.as_mut_ptr() as *mut u32;
-        let mut rkeys = ROUND_KEYS.as_ptr();
-        let rkeys_end = unsafe { rkeys.add(12) };
-        let c_ptr = unsafe { st_ptr.add(8) };
-
+        let rkeys = ROUND_KEYS.as_ptr();
         unsafe {
+            let st_ptr = self.st.as_mut_ptr() as *mut u32;
             let mut a0 = *st_ptr.add(0);
             let mut a1 = *st_ptr.add(1);
             let mut a2 = *st_ptr.add(2);
@@ -20,141 +21,104 @@ impl Xoodoo {
             let mut b1 = *st_ptr.add(5);
             let mut b2 = *st_ptr.add(6);
             let mut b3 = *st_ptr.add(7);
+            let mut rk = rkeys;
 
             asm!(
+                "mov r0, #12",           // Round counter
                 ".p2align 2",
-                "2:", // .Lround_loop
+                "3:",
+                "push {{r0}}",           // Save counter
 
                 // === THETA ===
-                // P0..3 are computed into the b registers temporarily,
-                // so we must save the real B plane to the stack.
-                // We use generic SUB/STR instead of PUSH {b0..b3} because
-                // rustc register allocation may not map b0..b3 to contiguous ascending registers.
-                "sub sp, sp, #16",
-                "str {b0}, [sp, #0]",
-                "str {b1}, [sp, #4]",
-                "str {b2}, [sp, #8]",
-                "str {b3}, [sp, #12]",
+                // Compute P_i = A_i ^ B_i ^ C_i. Must be done before applying Iota/Mixer.
+                "ldr r0, [{st}, #32]", "eor r0, r0, {a0}", "eor r0, r0, {b0}", "push {{r0}}", // P0 at [sp, #0]
+                "ldr r0, [{st}, #36]", "eor r0, r0, {a1}", "eor r0, r0, {b1}", "push {{r0}}", // P1 at [sp, #0], P0 at [sp, #4]
+                "ldr r0, [{st}, #40]", "eor r0, r0, {a2}", "eor r0, r0, {b2}", "push {{r0}}", // P2 at [sp, #0], P1 at [sp, #4], P0 at [sp, #8]
+                "ldr r0, [{st}, #44]", "eor r0, r0, {a3}", "eor r0, r0, {b3}",                 // r0 = P3
 
-                // Theta: Compute P in b0..b3
-                // P0 = a0 ^ b0 ^ c0
-                "ldr {t1}, [{c_ptr}, #0]",
-                "eor {b0}, {a0}, {b0}", "eor {b0}, {b0}, {t1}",
-                // P1
-                "ldr {t1}, [{c_ptr}, #4]",
-                "eor {b1}, {a1}, {b1}", "eor {b1}, {b1}, {t1}",
-                // P2
-                "ldr {t1}, [{c_ptr}, #8]",
-                "eor {b2}, {a2}, {b2}", "eor {b2}, {b2}, {t1}",
-                // P3
-                "ldr {t1}, [{c_ptr}, #12]",
-                "eor {b3}, {a3}, {b3}", "eor {b3}, {b3}, {t1}",
+                // --- IOTA ---
+                // Load Round Constant and apply to a0.
+                "ldr r1, [{rk}], #4",
+                "eor {a0}, {a0}, r1",
 
-                // Theta: Compute E. E0 = P3.rotr(27) ^ P3.rotr(18)
-                "ror {t1}, {b2}, #27", "eor {t1}, {t1}, {b2}, ror #18", // t1 = E3
-                "ror {t2}, {b1}, #27", "eor {t2}, {t2}, {b1}, ror #18", // t2 = E2
-                "ror {b1}, {b0}, #27", "eor {b1}, {b1}, {b0}, ror #18", // b1 = E1 (P0 is now consumed)
-                "ror {b2}, {b3}, #27", "eor {b2}, {b2}, {b3}, ror #18", // b2 = E0 (P3 is now consumed)
+                // Apply Mixer: E_i = P_{i-1}.rot(5) ^ P_{i-1}.rot(14)
+                // rot(5) = ROR 27, rot(14) = ROR 18
+                "ror r1, r0, #27", "eor r1, r1, r0, ror #18", // r1 = E0 (from P3 in r0)
+                "eor {a0}, {a0}, r1", "eor {b0}, {b0}, r1",
+                "ldr r0, [{st}, #32]", "eor r0, r0, r1", "str r0, [{st}, #32]",
 
-                // Apply E to A completely in registers
-                "eor {a0}, {a0}, {b2}",
-                "eor {a1}, {a1}, {b1}",
-                "eor {a2}, {a2}, {t2}",
-                "eor {a3}, {a3}, {t1}",
+                "ldr r0, [sp, #8]",      // P0
+                "ror r1, r0, #27", "eor r1, r1, r0, ror #18", // r1 = E1
+                "eor {a1}, {a1}, r1", "eor {b1}, {b1}, r1",
+                "ldr r0, [{st}, #36]", "eor r0, r0, r1", "str r0, [{st}, #36]",
 
-                // Apply E to B (which currently lives on the stack)
-                "ldr {b0}, [sp, #0]", "eor {b0}, {b0}, {b2}", "str {b0}, [sp, #0]",
-                "ldr {b0}, [sp, #4]", "eor {b0}, {b0}, {b1}", "str {b0}, [sp, #4]",
-                "ldr {b0}, [sp, #8]", "eor {b0}, {b0}, {t2}", "str {b0}, [sp, #8]",
-                "ldr {b0}, [sp, #12]","eor {b0}, {b0}, {t1}", "str {b0}, [sp, #12]",
+                "ldr r0, [sp, #4]",      // P1
+                "ror r1, r0, #27", "eor r1, r1, r0, ror #18", // r1 = E2
+                "eor {a2}, {a2}, r1", "eor {b2}, {b2}, r1",
+                "ldr r0, [{st}, #40]", "eor r0, r0, r1", "str r0, [{st}, #40]",
 
-                // Apply E to C (lives in main `st` array)
-                "ldr {b0}, [{c_ptr}, #0]", "eor {b0}, {b0}, {b2}", "str {b0}, [{c_ptr}, #0]",
-                "ldr {b0}, [{c_ptr}, #4]", "eor {b0}, {b0}, {b1}", "str {b0}, [{c_ptr}, #4]",
-                "ldr {b0}, [{c_ptr}, #8]", "eor {b0}, {b0}, {t2}", "str {b0}, [{c_ptr}, #8]",
-                "ldr {b0}, [{c_ptr}, #12]","eor {b0}, {b0}, {t1}", "str {b0}, [{c_ptr}, #12]",
+                "ldr r0, [sp, #0]",      // P2
+                "ror r1, r0, #27", "eor r1, r1, r0, ror #18", // r1 = E3
+                "eor {a3}, {a3}, r1", "eor {b3}, {b3}, r1",
+                "ldr r0, [{st}, #44]", "eor r0, r0, r1", "str r0, [{st}, #44]",
+
+                "add sp, sp, #12",       // Clean P results
 
                 // === RHO WEST ===
-                // B is shifted Left by 1 = Right by 31.
-                // We load B from stack with the column-shifted registry mapping:
-                // Old B3 goes to New B0, Old B0 to New B1, etc.
-                "ldr {b1}, [sp, #0]", "ror {b1}, {b1}, #31",
-                "ldr {b2}, [sp, #4]", "ror {b2}, {b2}, #31",
-                "ldr {b3}, [sp, #8]", "ror {b3}, {b3}, #31",
-                "ldr {b0}, [sp, #12]","ror {b0}, {b0}, #31",
-                // We purposely DO NOT free the sp stack layer here,
-                // so we can seamlessly reuse it as tmp scratch for Chi!
+                "mov r0, {b3}", "mov {b3}, {b2}", "mov {b2}, {b1}", "mov {b1}, {b0}", "mov {b0}, r0",
+                "ldr r0, [{st}, #32]", "ror r0, r0, #21", "str r0, [{st}, #32]",
+                "ldr r0, [{st}, #36]", "ror r0, r0, #21", "str r0, [{st}, #36]",
+                "ldr r0, [{st}, #40]", "ror r0, r0, #21", "str r0, [{st}, #40]",
+                "ldr r0, [{st}, #44]", "ror r0, r0, #21", "str r0, [{st}, #44]",
 
-                // === IOTA ===
-                "ldr {t1}, [{rkeys}], #4", // Load Round key & auto increment
-                "eor {a0}, {a0}, {t1}",
+                // === CHI ===
+                // Column 0
+                "mov r1, {a0}", "push {{{b0}}}",
+                "ldr r0, [{st}, #32]", "bic r0, r0, {b0}", "eor {a0}, {a0}, r0",
+                "ldr r0, [{st}, #32]", "bic r0, r1, r0", "eor {b0}, {b0}, r0",
+                "pop {{r0}}", "bic r0, r0, r1",
+                "ldr r1, [{st}, #32]", "eor r0, r0, r1", "str r0, [{st}, #32]",
 
-                // === CHI and RHO EAST (combined) ===
-                // To minimize scratch register dependencies securely, we process columns one by one
-                // and use the allocated stack layer to temporarily hold `tmpA` across the calculations.
+                // Column 1
+                "mov r1, {a1}", "push {{{b1}}}",
+                "ldr r0, [{st}, #36]", "bic r0, r0, {b1}", "eor {a1}, {a1}, r0",
+                "ldr r0, [{st}, #36]", "bic r0, r1, r0", "eor {b1}, {b1}, r0",
+                "pop {{r0}}", "bic r0, r0, r1",
+                "ldr r1, [{st}, #36]", "eor r0, r0, r1", "str r0, [{st}, #36]",
 
-                // Col 0
-                "ldr {t1}, [{c_ptr}, #0]",
-                "ror {t1}, {t1}, #21", // t1 = C0
-                "bic {t2}, {t1}, {b0}", "eor {t2}, {a0}, {t2}", // t2 = tmpA0
-                "str {t2}, [sp, #0]", // Save tmpA0
-                "bic {t2}, {a0}, {t1}", "eor {t2}, {b0}, {t2}", // t2 = tmpB0
-                "bic {a0}, {b0}, {a0}", "eor {t1}, {t1}, {a0}", // t1 = tmpC0
-                "ror {t2}, {t2}, #31", "mov {b0}, {t2}", // rotB = 1L (31R), save B0
-                "ror {t1}, {t1}, #24", "str {t1}, [{c_ptr}, #8]", // rotC = 8L (24R), save to C2!
-                "ldr {a0}, [sp, #0]", // restore A0
+                // Column 2
+                "mov r1, {a2}", "push {{{b2}}}",
+                "ldr r0, [{st}, #40]", "bic r0, r0, {b2}", "eor {a2}, {a2}, r0",
+                "ldr r0, [{st}, #40]", "bic r0, r1, r0", "eor {b2}, {b2}, r0",
+                "pop {{r0}}", "bic r0, r0, r1",
+                "ldr r1, [{st}, #40]", "eor r0, r0, r1", "str r0, [{st}, #40]",
 
-                // Col 1
-                "ldr {t1}, [{c_ptr}, #4]",
-                "ror {t1}, {t1}, #21", // t1 = C1
-                "bic {t2}, {t1}, {b1}", "eor {t2}, {a1}, {t2}", // t2 = tmpA1
-                "str {t2}, [sp, #4]", // Save tmpA1
-                "bic {t2}, {a1}, {t1}", "eor {t2}, {b1}, {t2}", // t2 = tmpB1
-                "bic {a1}, {b1}, {a1}", "eor {t1}, {t1}, {a1}", // t1 = tmpC1
-                "ror {t2}, {t2}, #31", "mov {b1}, {t2}", // rotB, save B1
-                "ror {t1}, {t1}, #24", "str {t1}, [{c_ptr}, #12]", // rotC, save to C3!
-                "ldr {a1}, [sp, #4]", // restore A1
+                // Column 3
+                "mov r1, {a3}", "push {{{b3}}}",
+                "ldr r0, [{st}, #44]", "bic r0, r0, {b3}", "eor {a3}, {a3}, r0",
+                "ldr r0, [{st}, #44]", "bic r0, r1, r0", "eor {b3}, {b3}, r0",
+                "pop {{r0}}", "bic r0, r0, r1",
+                "ldr r1, [{st}, #44]", "eor r0, r0, r1", "str r0, [{st}, #44]",
 
-                // Col 2
-                "ldr {t1}, [{c_ptr}, #8]",
-                "ror {t1}, {t1}, #21", // t1 = C2
-                "bic {t2}, {t1}, {b2}", "eor {t2}, {a2}, {t2}", // t2 = tmpA2
-                "str {t2}, [sp, #8]", // Save tmpA2
-                "bic {t2}, {a2}, {t1}", "eor {t2}, {b2}, {t2}", // t2 = tmpB2
-                "bic {a2}, {b2}, {a2}", "eor {t1}, {t1}, {a2}", // t1 = tmpC2
-                "ror {t2}, {t2}, #31", "mov {b2}, {t2}", // rotB, save B2
-                "ror {t1}, {t1}, #24", "str {t1}, [{c_ptr}, #0]", // rotC, save to C0!
-                "ldr {a2}, [sp, #8]", // restore A2
+                // === RHO EAST ===
+                "ror {b0}, {b0}, #31", "ror {b1}, {b1}, #31", "ror {b2}, {b2}, #31", "ror {b3}, {b3}, #31",
+                "ldr r0, [{st}, #32]", "ldr r1, [{st}, #40]", "str r0, [{st}, #40]", "str r1, [{st}, #32]",
+                "ldr r0, [{st}, #36]", "ldr r1, [{st}, #44]", "str r0, [{st}, #44]", "str r1, [{st}, #36]",
+                "ldr r0, [{st}, #32]", "ror r0, r0, #24", "str r0, [{st}, #32]",
+                "ldr r0, [{st}, #36]", "ror r0, r0, #24", "str r0, [{st}, #36]",
+                "ldr r0, [{st}, #40]", "ror r0, r0, #24", "str r0, [{st}, #40]",
+                "ldr r0, [{st}, #44]", "ror r0, r0, #24", "str r0, [{st}, #44]",
 
-                // Col 3
-                "ldr {t1}, [{c_ptr}, #12]",
-                "ror {t1}, {t1}, #21", // t1 = C3
-                "bic {t2}, {t1}, {b3}", "eor {t2}, {a3}, {t2}", // t2 = tmpA3
-                "str {t2}, [sp, #12]", // Save tmpA3
-                "bic {t2}, {a3}, {t1}", "eor {t2}, {b3}, {t2}", // t2 = tmpB3
-                "bic {a3}, {b3}, {a3}", "eor {t1}, {t1}, {a3}", // t1 = tmpC3
-                "ror {t2}, {t2}, #31", "mov {b3}, {t2}", // rotB, save B3
-                "ror {t1}, {t1}, #24", "str {t1}, [{c_ptr}, #4]", // rotC, save to C1!
-                "ldr {a3}, [sp, #12]", // restore A3
+                "pop {{r0}}",            // Restore loop counter
+                "subs r0, #1",
+                "bne 3b",
 
-                "add sp, sp, #16", // Now we free the scratch stack correctly
-
-                "cmp {rkeys}, {rkeys_end}",
-                "bne 2b",
-
-                a0 = inout(reg) a0,
-                a1 = inout(reg) a1,
-                a2 = inout(reg) a2,
-                a3 = inout(reg) a3,
-                b0 = inout(reg) b0,
-                b1 = inout(reg) b1,
-                b2 = inout(reg) b2,
-                b3 = inout(reg) b3,
-                rkeys = inout(reg) rkeys,
-                rkeys_end = in(reg) rkeys_end,
-                c_ptr = in(reg) c_ptr,
-                t1 = out(reg) _,
-                t2 = out(reg) _,
+                st = in(reg) st_ptr,
+                rk = inout(reg) rk,
+                a0 = inout(reg) a0, a1 = inout(reg) a1, a2 = inout(reg) a2, a3 = inout(reg) a3,
+                b0 = inout(reg) b0, b1 = inout(reg) b1, b2 = inout(reg) b2, b3 = inout(reg) b3,
+                out("r0") _,
+                out("r1") _,
             );
 
             *st_ptr.add(0) = a0;
@@ -165,6 +129,7 @@ impl Xoodoo {
             *st_ptr.add(5) = b1;
             *st_ptr.add(6) = b2;
             *st_ptr.add(7) = b3;
+            let _ = rk;
         }
     }
 }
