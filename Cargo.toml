@@ -16,7 +16,7 @@ default = ["std"]
 std = []
 
 [dependencies]
-zeroize = "1.8"
+zeroize = { version = "1.8", default-features = false }
 
 [dev-dependencies]
 benchmark-simple = "0.1.10"
