@@ -1,8 +1,8 @@
 use super::{Xoodoo, ROUND_KEYS};
-#[cfg(all(target_arch = "arm", target_feature = "thumb2"))]
+#[cfg(all(target_arch = "arm", target_has_atomic = "32"))]
 use core::arch::asm;
 
-#[cfg(all(target_arch = "arm", target_feature = "thumb2"))]
+#[cfg(all(target_arch = "arm", target_has_atomic = "32"))]
 impl Xoodoo {
     #[allow(clippy::many_single_char_names)]
     pub fn permute(&mut self) {
