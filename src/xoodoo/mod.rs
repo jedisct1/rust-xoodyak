@@ -11,6 +11,7 @@ const ROUND_KEYS: [u32; 12] = [
 ];
 
 #[derive(Clone, Debug)]
+#[repr(align(4))]
 pub struct Xoodoo {
     st: [u8; 48],
 }
@@ -57,7 +58,7 @@ impl Xoodoo {
         for st_word in &mut st_words {
             *st_word = (*st_word).to_le()
         }
-        self.from_words(&st_words);
+        self.init_from_words(st_words);
     }
 
     #[cfg(target_endian = "little")]
