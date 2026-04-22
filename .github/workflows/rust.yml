@@ -8,12 +8,20 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: thumbv7m-none-eabi
     - name: Build
       run: cargo build --verbose
+    - name: Build (no_std)
+      run: cargo build --verbose --no-default-features
+    - name: Build (thumbv7m-none-eabi)
+      run: cargo build --verbose --no-default-features --target thumbv7m-none-eabi
     - name: Run tests
       run: cargo test --verbose
+    - name: Run tests (no_std)
+      run: cargo test --verbose --no-default-features
