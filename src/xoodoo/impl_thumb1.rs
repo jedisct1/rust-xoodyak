@@ -157,51 +157,45 @@ impl Xoodoo {
                 "eors    r3, r1",
 
                 // === χ (Chi) step ===
-                // A[x,y] ^= (~A[x,y+1]) & A[x,y+2]
+                // A[x,0] ^= (~A[x,1]) & A[x,2]
+                // A[x,1] ^= (~A[x,2]) & A[x,0]
+                // A[x,2] ^= (~A[x,0]) & A[x,1]
 
                 // x=0 (Col 0)
-                "mov     r0, r3",
                 "mov     r1, r10",
                 "mov     r2, r4",
                 "bics    r2, r1",
-                "eors    r3, r2",
-                "mov     r2, r0",
+                "eors    r3, r2",                   // a0 = a0_new
+                "mov     r2, r3",
                 "bics    r2, r4",
                 "eors    r2, r1",
-                "mov     r10, r2",
-                "mov     r2, r1",
-                "bics    r2, r0",
-                "eors    r4, r2",
+                "mov     r10, r2",                  // a1 = a1_new
+                "bics    r2, r3",
+                "eors    r4, r2",                   // a2 = a2_new
 
                 // x=1 (Col 1)
-                "mov     r0, r8",
                 "mov     r1, r11",
                 "mov     r2, r5",
                 "bics    r2, r1",
-                "eors    r2, r0",
-                "mov     r8, r2",
-                "mov     r2, r0",
+                "eors    r2, r8",
+                "mov     r8, r2",                   // a0 = a0_new
                 "bics    r2, r5",
                 "eors    r2, r1",
-                "mov     r11, r2",
-                "mov     r2, r1",
-                "bics    r2, r0",
-                "eors    r5, r2",
+                "mov     r11, r2",                  // a1 = a1_new
+                "bics    r2, r8",
+                "eors    r5, r2",                   // a2 = a2_new
 
                 // x=2 (Col 2)
-                "mov     r0, r9",
                 "mov     r1, r12",
                 "mov     r2, r6",
                 "bics    r2, r1",
-                "eors    r2, r0",
-                "mov     r9, r2",
-                "mov     r2, r0",
+                "eors    r2, r9",
+                "mov     r9, r2",                   // a0 = a0_new
                 "bics    r2, r6",
                 "eors    r2, r1",
-                "mov     r12, r2",
-                "mov     r2, r1",
-                "bics    r2, r0",
-                "eors    r6, r2",
+                "mov     r12, r2",                  // a1 = a1_new
+                "bics    r2, r9",
+                "eors    r6, r2",                   // a2 = a2_new
 
                 // x=3 (Col 3)
                 "ldr     r0, [sp, #0]",
@@ -209,14 +203,13 @@ impl Xoodoo {
                 "mov     r2, r7",
                 "bics    r2, r1",
                 "eors    r0, r2",
-                "str     r0, [sp, #0]",
+                "str     r0, [sp, #0]",             // a0 = a0_new
                 "mov     r2, r0",
                 "bics    r2, r7",
                 "eors    r2, r1",
-                "mov     lr, r2",
-                "mov     r2, r1",
+                "mov     lr, r2",                   // a1 = a1_new
                 "bics    r2, r0",
-                "eors    r7, r2",
+                "eors    r7, r2",                   // a2 = a2_new
 
                 // === ρ (Rho) East step ===
                 // A[x,1] = rot(A[x,1], 1)
