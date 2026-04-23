@@ -55,84 +55,84 @@ impl Xoodoo {
                 // P3 = A[3,0] ^ A[3,1] ^ A[3,2]
                 "ldr     r0, [sp, #0]",
                 "mov     r1, lr",
-                "eors    r0, r0, r1",
-                "eors    r0, r0, r7",               // r0 = P3
+                "eors    r0, r1",
+                "eors    r0, r7",                   // r0 = P3
                 "mov     r1, r0",
                 "movs    r2, #23",                  // rot 9
-                "rors    r1, r1, r2",
-                "eors    r1, r1, r0",
+                "rors    r1, r2",
+                "eors    r1, r0",
                 "movs    r2, #27",                  // rot 5
-                "rors    r1, r1, r2",               // r1 = E0
+                "rors    r1, r2",                   // r1 = E0
 
                 // Apply E0 to Col 0
                 "mov     r0, r3",                   // P0 calculation starts here
                 "mov     r2, r10",
-                "eors    r0, r0, r2",
-                "eors    r0, r0, r4",               // r0 = P0
-                "eors    r3, r3, r1",               // A[0,0] ^= E0
+                "eors    r0, r2",
+                "eors    r0, r4",                   // r0 = P0
+                "eors    r3, r1",                   // A[0,0] ^= E0
                 "mov     r2, r10",
-                "eors    r2, r2, r1",
+                "eors    r2, r1",
                 "mov     r10, r2",                  // A[0,1] ^= E0
-                "eors    r4, r4, r1",               // A[0,2] ^= E0
+                "eors    r4, r1",                   // A[0,2] ^= E0
 
                 // --- Calculate E1 from P0 ---
                 "mov     r1, r0",
                 "movs    r2, #23",
-                "rors    r1, r1, r2",
-                "eors    r1, r1, r0",
+                "rors    r1, r2",
+                "eors    r1, r0",
                 "movs    r2, #27",
-                "rors    r1, r1, r2",               // r1 = E1
+                "rors    r1, r2",               // r1 = E1
 
                 // Apply E1 to Col 1
                 "mov     r0, r8",                   // P1 calculation
                 "mov     r2, r11",
-                "eors    r0, r0, r2",
-                "eors    r0, r0, r5",               // r0 = P1
+                "eors    r0, r2",
+                "eors    r0, r5",               // r0 = P1
                 "mov     r2, r8",
-                "eors    r2, r2, r1",
+                "eors    r2, r1",
                 "mov     r8, r2",                   // A[1,0] ^= E1
                 "mov     r2, r11",
-                "eors    r2, r2, r1",
+                "eors    r2, r1",
                 "mov     r11, r2",                  // A[1,1] ^= E1
-                "eors    r5, r5, r1",               // A[1,2] ^= E1
+                "eors    r5, r1",                   // A[1,2] ^= E1
 
                 // --- Calculate E2 from P1 ---
                 "mov     r1, r0",
                 "movs    r2, #23",
-                "rors    r1, r1, r2",
-                "eors    r1, r1, r0",
+                "rors    r1, r2",
+                "eors    r1, r0",
                 "movs    r2, #27",
-                "rors    r1, r1, r2",               // r1 = E2
+                "rors    r1, r2",               // r1 = E2
 
                 // Apply E2 to Col 2
                 "mov     r0, r9",                   // P2 calculation
                 "mov     r2, r12",
-                "eors    r0, r0, r2",
-                "eors    r0, r0, r6",               // r0 = P2
+                "eors    r0, r2",
+                "eors    r0, r6",               // r0 = P2
                 "mov     r2, r9",
-                "eors    r2, r2, r1",
+                "eors    r2, r1",
                 "mov     r9, r2",                   // A[2,0] ^= E2
                 "mov     r2, r12",
-                "eors    r2, r2, r1",
+                "eors    r2, r1",
                 "mov     r12, r2",                  // A[2,1] ^= E2
-                "eors    r6, r6, r1",               // A[2,2] ^= E2
+                "eors    r6, r1",                   // A[2,2] ^= E2
 
                 // --- Calculate E3 from P2 ---
                 "mov     r1, r0",
                 "movs    r2, #23",
-                "rors    r1, r1, r2",
-                "eors    r1, r1, r0",
+                "rors    r1, r2",
+                "eors    r1, r0",
                 "movs    r2, #27",
-                "rors    r1, r1, r2",               // r1 = E3
+                "rors    r1, r2",               // r1 = E3
 
                 // Apply E3 to Col 3
                 "ldr     r0, [sp, #0]",
-                "eors    r0, r0, r1",
+                "eors    r0, r1",
                 "str     r0, [sp, #0]",             // A[3,0] ^= E3
                 "mov     r2, lr",
-                "eors    r2, r2, r1",
+                "eors    r2, r1",
                 "mov     lr, r2",                   // A[3,1] ^= E3
-                "eors    r7, r7, r1",               // A[3,2] ^= E3
+                "eors    r7, r1",                   // A[3,2] ^= E3
 
                 // === ρ (Rho) West step ===
                 // A[x,1] = A[x-1,1] (Cyclic shift Row 1)
@@ -144,17 +144,17 @@ impl Xoodoo {
 
                 // A[x,2] = rot(A[x,2], 11)
                 "movs    r0, #21",                  // rot 11
-                "rors    r4, r4, r0",
-                "rors    r5, r5, r0",
-                "rors    r6, r6, r0",
-                "rors    r7, r7, r0",
+                "rors    r4, r0",
+                "rors    r5, r0",
+                "rors    r6, r0",
+                "rors    r7, r0",
 
                 // === ι (Iota) step ===
                 // A[0,0] ^= RC
                 "ldr     r0, [sp, #4]",
                 "ldm     r0!, {{r1}}",
                 "str     r0, [sp, #4]",
-                "eors    r3, r3, r1",
+                "eors    r3, r1",
 
                 // === χ (Chi) step ===
                 // A[x,y] ^= (~A[x,y+1]) & A[x,y+2]
@@ -162,46 +162,76 @@ impl Xoodoo {
                 // x=0 (Col 0)
                 "mov     r0, r3",
                 "mov     r1, r10",
-                "bics    r2, r4, r1",   "eors r3, r3, r2",
-                "bics    r2, r0, r4",   "eors r10, r10, r2",
-                "bics    r2, r1, r0",   "eors r4, r4, r2",
+                "mov     r2, r4",
+                "bics    r2, r1",
+                "eors    r3, r2",
+                "mov     r2, r0",
+                "bics    r2, r4",
+                "eors    r2, r1",
+                "mov     r10, r2",
+                "mov     r2, r1",
+                "bics    r2, r0",
+                "eors    r4, r2",
 
                 // x=1 (Col 1)
                 "mov     r0, r8",
                 "mov     r1, r11",
-                "bics    r2, r5, r1",   "eors r8, r8, r2",
-                "bics    r2, r0, r5",   "eors r11, r11, r2",
-                "bics    r2, r1, r0",   "eors r5, r5, r2",
+                "mov     r2, r5",
+                "bics    r2, r1",
+                "eors    r2, r0",
+                "mov     r8, r2",
+                "mov     r2, r0",
+                "bics    r2, r5",
+                "eors    r2, r1",
+                "mov     r11, r2",
+                "mov     r2, r1",
+                "bics    r2, r0",
+                "eors    r5, r2",
 
                 // x=2 (Col 2)
                 "mov     r0, r9",
                 "mov     r1, r12",
-                "bics    r2, r6, r1",   "eors r9, r9, r2",
-                "bics    r2, r0, r6",   "eors r12, r12, r2",
-                "bics    r2, r1, r0",   "eors r6, r6, r2",
+                "mov     r2, r6",
+                "bics    r2, r1",
+                "eors    r2, r0",
+                "mov     r9, r2",
+                "mov     r2, r0",
+                "bics    r2, r6",
+                "eors    r2, r1",
+                "mov     r12, r2",
+                "mov     r2, r1",
+                "bics    r2, r0",
+                "eors    r6, r2",
 
                 // x=3 (Col 3)
                 "ldr     r0, [sp, #0]",
                 "mov     r1, lr",
-                "bics    r2, r7, r1",   "eors r0, r0, r2",
+                "mov     r2, r7",
+                "bics    r2, r1",
+                "eors    r0, r2",
                 "str     r0, [sp, #0]",
-                "bics    r2, r0, r7",   "eors lr, lr, r2",
-                "bics    r2, r1, r0",   "eors r7, r7, r2",
+                "mov     r2, r0",
+                "bics    r2, r7",
+                "eors    r2, r1",
+                "mov     lr, r2",
+                "mov     r2, r1",
+                "bics    r2, r0",
+                "eors    r7, r2",
 
                 // === ρ (Rho) East step ===
                 // A[x,1] = rot(A[x,1], 1)
                 "movs    r0, #31",                  // rot 1
-                "mov     r1, r10",  "rors r1, r1, r0",  "mov r10, r1",
-                "mov     r1, r11",  "rors r1, r1, r0",  "mov r11, r1",
-                "mov     r1, r12",  "rors r1, r1, r0",  "mov r12, r1",
-                "mov     r1, lr",   "rors r1, r1, r0",  "mov lr, r1",
+                "mov     r1, r10",  "rors r1, r0",  "mov r10, r1",
+                "mov     r1, r11",  "rors r1, r0",  "mov r11, r1",
+                "mov     r1, r12",  "rors r1, r0",  "mov r12, r1",
+                "mov     r1, lr",   "rors r1, r0",  "mov lr, r1",
 
                 // A[x,2] = rot(A[x-2,2], 8)
                 "movs    r0, #24",                  // rot 8
-                "rors    r4, r4, r0",
-                "rors    r5, r5, r0",
-                "rors    r6, r6, r0",
-                "rors    r7, r7, r0",
+                "rors    r4, r0",
+                "rors    r5, r0",
+                "rors    r6, r0",
+                "rors    r7, r0",
                 // Cyclic shift Row 2 by 2
                 "mov     r0, r4",   "mov r4, r6",   "mov r6, r0",
                 "mov     r0, r5",   "mov r5, r7",   "mov r7, r0",
