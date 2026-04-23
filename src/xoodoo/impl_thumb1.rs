@@ -1,8 +1,8 @@
+#![cfg(all(target_arch = "arm", not(target_has_atomic = "32")))]
+
 use super::{Xoodoo, ROUND_KEYS};
-#[cfg(all(target_arch = "arm", not(target_has_atomic = "32")))]
 use core::arch::asm;
 
-#[cfg(all(target_arch = "arm", not(target_has_atomic = "32")))]
 impl Xoodoo {
     /// Optimized Xoodoo permutation for ARMv6-M (Cortex-M0).
     #[allow(clippy::many_single_char_names)]
