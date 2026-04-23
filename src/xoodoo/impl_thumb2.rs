@@ -5,9 +5,6 @@ use core::arch::asm;
 #[cfg(all(target_arch = "arm", target_has_atomic = "32"))]
 impl Xoodoo {
     /// Optimized Xoodoo permutation for ARMv7-M (Thumb-2).
-    /// This version keeps Plane A and Plane B in registers (8 total) to maximize speed
-    /// while keeping register pressure low enough for reliable compilation on all
-    /// Thumb-2 targets. Plane C is handled via memory operations to save registers.
     #[allow(clippy::many_single_char_names)]
     pub fn permute(&mut self) {
         let rkeys = ROUND_KEYS.as_ptr();
@@ -24,94 +21,105 @@ impl Xoodoo {
             let mut rk = rkeys;
 
             asm!(
-                "mov r0, #12",           // Round counter
+                "mov  r0, #12",                 // Round counter
                 ".p2align 2",
                 "3:",
-                "push {{r0}}",           // Save counter
+                "push {{r0}}",                   // Save counter
 
-                // === THETA ===
-                // Compute P_i = A_i ^ B_i ^ C_i. Must be done before applying Iota/Mixer.
-                "ldr r0, [{st}, #32]", "eor r0, r0, {a0}", "eor r0, r0, {b0}", "push {{r0}}", // P0 at [sp, #0]
-                "ldr r0, [{st}, #36]", "eor r0, r0, {a1}", "eor r0, r0, {b1}", "push {{r0}}", // P1 at [sp, #0], P0 at [sp, #4]
-                "ldr r0, [{st}, #40]", "eor r0, r0, {a2}", "eor r0, r0, {b2}", "push {{r0}}", // P2 at [sp, #0], P1 at [sp, #4], P0 at [sp, #8]
-                "ldr r0, [{st}, #44]", "eor r0, r0, {a3}", "eor r0, r0, {b3}",                 // r0 = P3
+                // === θ step ===
+                // P[x] = A[x,0] ^ A[x,1] ^ A[x,2]
+                // E[x] = rot(P[x-1], 5) ^ rot(P[x-1], 14)
+                // A[x,y] = A[x,y] ^ E[x]
 
-                // --- IOTA ---
-                // Load Round Constant and apply to a0.
-                "ldr r1, [{rk}], #4",
-                "eor {a0}, {a0}, r1",
+                "ldr  r0, [{st}, #32]", "eor  r0, r0, {a0}", "eor  r0, r0, {b0}", "push {{r0}}", // P0 at [sp, #0]
+                "ldr  r0, [{st}, #36]", "eor  r0, r0, {a1}", "eor  r0, r0, {b1}", "push {{r0}}", // P1 at [sp, #0], P0 at [sp, #4]
+                "ldr  r0, [{st}, #40]", "eor  r0, r0, {a2}", "eor  r0, r0, {b2}", "push {{r0}}", // P2 at [sp, #0], P1 at [sp, #4], P0 at [sp, #8]
+                "ldr  r0, [{st}, #44]", "eor  r0, r0, {a3}", "eor  r0, r0, {b3}",                 // r0 = P3
 
-                // Apply Mixer: E_i = P_{i-1}.rot(5) ^ P_{i-1}.rot(14)
-                // rot(5) = ROR 27, rot(14) = ROR 18
-                "ror r1, r0, #27", "eor r1, r1, r0, ror #18", // r1 = E0 (from P3 in r0)
-                "eor {a0}, {a0}, r1", "eor {b0}, {b0}, r1",
-                "ldr r0, [{st}, #32]", "eor r0, r0, r1", "str r0, [{st}, #32]",
+                // Apply E0..E3
+                "ror  r1, r0, #27", "eor  r1, r1, r0, ror #18", // r1 = E0 (from P3)
+                "eor  {a0}, {a0}, r1", "eor  {b0}, {b0}, r1",
+                "ldr  r0, [{st}, #32]", "eor  r0, r0, r1", "str  r0, [{st}, #32]",
 
-                "ldr r0, [sp, #8]",      // P0
-                "ror r1, r0, #27", "eor r1, r1, r0, ror #18", // r1 = E1
-                "eor {a1}, {a1}, r1", "eor {b1}, {b1}, r1",
-                "ldr r0, [{st}, #36]", "eor r0, r0, r1", "str r0, [{st}, #36]",
+                "ldr  r0, [sp, #8]",             // P0
+                "ror  r1, r0, #27", "eor  r1, r1, r0, ror #18", // r1 = E1
+                "eor  {a1}, {a1}, r1", "eor  {b1}, {b1}, r1",
+                "ldr  r0, [{st}, #36]", "eor  r0, r0, r1", "str  r0, [{st}, #36]",
 
-                "ldr r0, [sp, #4]",      // P1
-                "ror r1, r0, #27", "eor r1, r1, r0, ror #18", // r1 = E2
-                "eor {a2}, {a2}, r1", "eor {b2}, {b2}, r1",
-                "ldr r0, [{st}, #40]", "eor r0, r0, r1", "str r0, [{st}, #40]",
+                "ldr  r0, [sp, #4]",             // P1
+                "ror  r1, r0, #27", "eor  r1, r1, r0, ror #18", // r1 = E2
+                "eor  {a2}, {a2}, r1", "eor  {b2}, {b2}, r1",
+                "ldr  r0, [{st}, #40]", "eor  r0, r0, r1", "str  r0, [{st}, #40]",
 
-                "ldr r0, [sp, #0]",      // P2
-                "ror r1, r0, #27", "eor r1, r1, r0, ror #18", // r1 = E3
-                "eor {a3}, {a3}, r1", "eor {b3}, {b3}, r1",
-                "ldr r0, [{st}, #44]", "eor r0, r0, r1", "str r0, [{st}, #44]",
+                "ldr  r0, [sp, #0]",             // P2
+                "ror  r1, r0, #27", "eor  r1, r1, r0, ror #18", // r1 = E3
+                "eor  {a3}, {a3}, r1", "eor  {b3}, {b3}, r1",
+                "ldr  r0, [{st}, #44]", "eor  r0, r0, r1", "str  r0, [{st}, #44]",
 
-                "add sp, sp, #12",       // Clean P results
+                "add  sp, sp, #12",              // Clean P results
 
-                // === RHO WEST ===
-                "mov r0, {b3}", "mov {b3}, {b2}", "mov {b2}, {b1}", "mov {b1}, {b0}", "mov {b0}, r0",
-                "ldr r0, [{st}, #32]", "ror r0, r0, #21", "str r0, [{st}, #32]",
-                "ldr r0, [{st}, #36]", "ror r0, r0, #21", "str r0, [{st}, #36]",
-                "ldr r0, [{st}, #40]", "ror r0, r0, #21", "str r0, [{st}, #40]",
-                "ldr r0, [{st}, #44]", "ror r0, r0, #21", "str r0, [{st}, #44]",
+                // === ρ West step ===
+                // A[x,1] = A[x-1,1]
+                // A[x,2] = rot(A[x,2], 11)
 
-                // === CHI ===
-                // Column 0
-                "mov r1, {a0}", "push {{{b0}}}",
-                "ldr r0, [{st}, #32]", "bic r0, r0, {b0}", "eor {a0}, {a0}, r0",
-                "ldr r0, [{st}, #32]", "bic r0, r1, r0", "eor {b0}, {b0}, r0",
-                "pop {{r0}}", "bic r0, r0, r1",
-                "ldr r1, [{st}, #32]", "eor r0, r0, r1", "str r0, [{st}, #32]",
+                "mov  r0, {b3}", "mov  {b3}, {b2}", "mov  {b2}, {b1}", "mov  {b1}, {b0}", "mov  {b0}, r0",
+                "ldr  r0, [{st}, #32]", "ror  r0, r0, #21", "str  r0, [{st}, #32]",
+                "ldr  r0, [{st}, #36]", "ror  r0, r0, #21", "str  r0, [{st}, #36]",
+                "ldr  r0, [{st}, #40]", "ror  r0, r0, #21", "str  r0, [{st}, #40]",
+                "ldr  r0, [{st}, #44]", "ror  r0, r0, #21", "str  r0, [{st}, #44]",
 
-                // Column 1
-                "mov r1, {a1}", "push {{{b1}}}",
-                "ldr r0, [{st}, #36]", "bic r0, r0, {b1}", "eor {a1}, {a1}, r0",
-                "ldr r0, [{st}, #36]", "bic r0, r1, r0", "eor {b1}, {b1}, r0",
-                "pop {{r0}}", "bic r0, r0, r1",
-                "ldr r1, [{st}, #36]", "eor r0, r0, r1", "str r0, [{st}, #36]",
+                // === ι step ===
+                // A[0,0] = A[0,0] ^ RC
 
-                // Column 2
-                "mov r1, {a2}", "push {{{b2}}}",
-                "ldr r0, [{st}, #40]", "bic r0, r0, {b2}", "eor {a2}, {a2}, r0",
-                "ldr r0, [{st}, #40]", "bic r0, r1, r0", "eor {b2}, {b2}, r0",
-                "pop {{r0}}", "bic r0, r0, r1",
-                "ldr r1, [{st}, #40]", "eor r0, r0, r1", "str r0, [{st}, #40]",
+                "ldr  r1, [{rk}], #4",
+                "eor  {a0}, {a0}, r1",
 
-                // Column 3
-                "mov r1, {a3}", "push {{{b3}}}",
-                "ldr r0, [{st}, #44]", "bic r0, r0, {b3}", "eor {a3}, {a3}, r0",
-                "ldr r0, [{st}, #44]", "bic r0, r1, r0", "eor {b3}, {b3}, r0",
-                "pop {{r0}}", "bic r0, r0, r1",
-                "ldr r1, [{st}, #44]", "eor r0, r0, r1", "str r0, [{st}, #44]",
+                // === χ step ===
+                // A[x,y] = A[x,y] ^ ((not A[x,y+1]) and A[x,y+2])
 
-                // === RHO EAST ===
-                "ror {b0}, {b0}, #31", "ror {b1}, {b1}, #31", "ror {b2}, {b2}, #31", "ror {b3}, {b3}, #31",
-                "ldr r0, [{st}, #32]", "ldr r1, [{st}, #40]", "str r0, [{st}, #40]", "str r1, [{st}, #32]",
-                "ldr r0, [{st}, #36]", "ldr r1, [{st}, #44]", "str r0, [{st}, #44]", "str r1, [{st}, #36]",
-                "ldr r0, [{st}, #32]", "ror r0, r0, #24", "str r0, [{st}, #32]",
-                "ldr r0, [{st}, #36]", "ror r0, r0, #24", "str r0, [{st}, #36]",
-                "ldr r0, [{st}, #40]", "ror r0, r0, #24", "str r0, [{st}, #40]",
-                "ldr r0, [{st}, #44]", "ror r0, r0, #24", "str r0, [{st}, #44]",
+                // Col 0
+                "mov  r1, {a0}", "push {{{b0}}}",
+                "ldr  r0, [{st}, #32]", "bic  r0, r0, {b0}", "eor  {a0}, {a0}, r0",
+                "ldr  r0, [{st}, #32]", "bic  r0, r1, r0", "eor  {b0}, {b0}, r0",
+                "pop  {{r0}}", "bic  r0, r0, r1",
+                "ldr  r1, [{st}, #32]", "eor  r0, r0, r1", "str  r0, [{st}, #32]",
 
-                "pop {{r0}}",            // Restore loop counter
+                // Col 1
+                "mov  r1, {a1}", "push {{{b1}}}",
+                "ldr  r0, [{st}, #36]", "bic  r0, r0, {b1}", "eor  {a1}, {a1}, r0",
+                "ldr  r0, [{st}, #36]", "bic  r0, r1, r0", "eor  {b1}, {b1}, r0",
+                "pop  {{r0}}", "bic  r0, r0, r1",
+                "ldr  r1, [{st}, #36]", "eor  r0, r0, r1", "str  r0, [{st}, #36]",
+
+                // Col 2
+                "mov  r1, {a2}", "push {{{b2}}}",
+                "ldr  r0, [{st}, #40]", "bic  r0, r0, {b2}", "eor  {a2}, {a2}, r0",
+                "ldr  r0, [{st}, #40]", "bic  r0, r1, r0", "eor  {b2}, {b2}, r0",
+                "pop  {{r0}}", "bic  r0, r0, r1",
+                "ldr  r1, [{st}, #40]", "eor  r0, r0, r1", "str  r0, [{st}, #40]",
+
+                // Col 3
+                "mov  r1, {a3}", "push {{{b3}}}",
+                "ldr  r0, [{st}, #44]", "bic  r0, r0, {b3}", "eor  {a3}, {a3}, r0",
+                "ldr  r0, [{st}, #44]", "bic  r0, r1, r0", "eor  {b3}, {b3}, r0",
+                "pop  {{r0}}", "bic  r0, r0, r1",
+                "ldr  r1, [{st}, #44]", "eor  r0, r0, r1", "str  r0, [{st}, #44]",
+
+                // === ρ East step ===
+                // A[x,1] = rot(A[x,1], 1)
+                // A[x,2] = rot(A[x-2,2], 8)
+
+                "ror  {b0}, {b0}, #31", "ror  {b1}, {b1}, #31", "ror  {b2}, {b2}, #31", "ror  {b3}, {b3}, #31",
+                "ldr  r0, [{st}, #32]", "ldr  r1, [{st}, #40]", "str  r0, [{st}, #40]", "str  r1, [{st}, #32]",
+                "ldr  r0, [{st}, #36]", "ldr  r1, [{st}, #44]", "str  r0, [{st}, #44]", "str  r1, [{st}, #36]",
+                "ldr  r0, [{st}, #32]", "ror  r0, r0, #24", "str  r0, [{st}, #32]",
+                "ldr  r0, [{st}, #36]", "ror  r0, r0, #24", "str  r0, [{st}, #36]",
+                "ldr  r0, [{st}, #40]", "ror  r0, r0, #24", "str  r0, [{st}, #40]",
+                "ldr  r0, [{st}, #44]", "ror  r0, r0, #24", "str  r0, [{st}, #44]",
+
+                "pop  {{r0}}",                   // Restore loop counter
                 "subs r0, #1",
-                "bne 3b",
+                "bne  3b",
 
                 st = in(reg) st_ptr,
                 rk = inout(reg) rk,
