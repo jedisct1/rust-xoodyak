@@ -1,7 +1,6 @@
-#![cfg(all(target_arch = "arm", target_has_atomic = "32"))]
+use core::arch::asm;
 
 use super::{Xoodoo, ROUND_KEYS};
-use core::arch::asm;
 
 impl Xoodoo {
     /// Highly optimized Xoodoo permutation for ARMv7-M (Thumb-2).
