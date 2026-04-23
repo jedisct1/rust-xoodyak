@@ -177,24 +177,28 @@ impl Xoodoo {
                 "mov     r1, r11",
                 "mov     r2, r5",
                 "bics    r2, r1",
-                "eors    r2, r8",
+                "mov     r0, r8",
+                "eors    r2, r0",
                 "mov     r8, r2",                   // a0 = a0_new
                 "bics    r2, r5",
                 "eors    r2, r1",
                 "mov     r11, r2",                  // a1 = a1_new
-                "bics    r2, r8",
+                "mov     r0, r8",
+                "bics    r2, r0",
                 "eors    r5, r2",                   // a2 = a2_new
 
                 // x=2 (Col 2)
                 "mov     r1, r12",
                 "mov     r2, r6",
                 "bics    r2, r1",
-                "eors    r2, r9",
+                "mov     r0, r9",
+                "eors    r2, r0",
                 "mov     r9, r2",                   // a0 = a0_new
                 "bics    r2, r6",
                 "eors    r2, r1",
                 "mov     r12, r2",                  // a1 = a1_new
-                "bics    r2, r9",
+                "mov     r0, r9",
+                "bics    r2, r0",
                 "eors    r6, r2",                   // a2 = a2_new
 
                 // x=3 (Col 3)
