@@ -22,11 +22,12 @@ impl Xoodoo {
                 "push    {{r0}}",
 
                 // Stack frame: [0]=A30, [4]=rk, [8]=counter, [12]=st
-                "sub     sp, sp, #16",
-                "str     {rk}, [sp, #4]",
+                "push    {{{st}}}",                 // [sp, #12]:st
                 "movs    r0, #12",
-                "str     r0, [sp, #8]",
-                "str     {st}, [sp, #12]",
+                "push    {{r0}}",                    // [sp, #8]:counter
+                "push    {{{rk}}}",                  // [sp, #4]:rk
+                "movs    r0, #0",
+                "push    {{r0}}",                    // [sp, #0]:A30 placeholder
 
                 // Load initial state
                 // Row 0: r3, r8, r9, [sp, #0]   (A[0,0], A[1,0], A[2,0], A[3,0])
@@ -254,7 +255,7 @@ impl Xoodoo {
                 "stm     r0!, {{r1, r4-r7}}",
 
                 // Restore registers
-                "add     sp, sp, #16",
+                "pop     {{r0, r1, r2, r3}}",               // Discard frame
                 "pop     {{r0}}",
                 "mov     r12, r0",
                 "pop     {{r0-r3}}",

@@ -14,13 +14,11 @@ impl Xoodoo {
             asm!(
                 // Save callee-saved registers
                 "push    {{r4-r11, lr}}",
-                "sub     sp, sp, #12",              // [sp, #0]:rk, [sp, #4]:count, [sp, #8]:st
-
-                // Store initial pointers and counter
-                "str     {rk}, [sp, #0]",
+                // Stack frame: [0]=rk, [4]=count, [8]=st
+                "push    {{{st}}}",                 // [sp, #8]:st
                 "mov     r0, #12",
-                "str     r0, [sp, #4]",
-                "str     {st}, [sp, #8]",
+                "push    {{r0}}",                    // [sp, #4]:count
+                "push    {{{rk}}}",                  // [sp, #0]:rk
 
                 // Load 12-word state into registers
                 // r2-r5: Row 0 (A[0,0]-A[3,0])
@@ -65,7 +63,7 @@ impl Xoodoo {
                 "ror     r0, r0, #27",
                 "eor     r5, r5, r0",   "eor r9, r9, r0",   "eor lr, lr, r0",
 
-                "add     sp, sp, #8",                       // Discard P0, P1
+                "pop     {{r0, r1}}",                       // Discard P0, P1
 
                 // === ρ (Rho) West step ===
                 // A[x,1] = A[x-1,1] (Cyclic shift Row 1)
@@ -134,7 +132,7 @@ impl Xoodoo {
                 "ldr     r0, [sp, #8]",
                 "stmia   r0, {{r2-r12, lr}}",
 
-                "add     sp, sp, #12",
+                "pop     {{r0, r1, r2}}",                   // Discard rk, count, st
                 "pop     {{r4-r11, lr}}",
 
                 rk = in(reg) rkeys,
