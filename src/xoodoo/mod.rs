@@ -3,20 +3,12 @@ use zeroize::Zeroize;
 
 #[cfg(not(any(
     target_arch = "x86_64",
-    all(target_arch = "arm", target_endian = "little"),
+    all(target_arch = "arm", target_endian = "little", any(thumb1, thumb2)),
 )))]
 mod impl_portable;
-#[cfg(all(
-    target_arch = "arm",
-    target_endian = "little",
-    not(target_has_atomic = "32"),
-))]
+#[cfg(all(target_arch = "arm", target_endian = "little", thumb1))]
 mod impl_thumb1;
-#[cfg(all(
-    target_arch = "arm",
-    target_endian = "little",
-    target_has_atomic = "32",
-))]
+#[cfg(all(target_arch = "arm", target_endian = "little", thumb2))]
 mod impl_thumb2;
 #[cfg(target_arch = "x86_64")]
 mod impl_x86_64;
