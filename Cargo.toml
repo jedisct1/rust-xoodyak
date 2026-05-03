@@ -13,7 +13,7 @@ categories = ["no-std", "cryptography", "wasm"]
 
 [features]
 default = ["std"]
-std = []
+std = ["zeroize/alloc"]
 
 [dependencies]
 zeroize = { version = "1.8", default-features = false }
