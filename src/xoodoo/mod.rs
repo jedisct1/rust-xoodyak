@@ -11,6 +11,7 @@ const ROUND_KEYS: [u32; 12] = [
 ];
 
 #[derive(Clone, Debug)]
+#[repr(align(4))]
 pub struct Xoodoo {
     st: [u8; 48],
 }
