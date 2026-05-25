@@ -13,10 +13,10 @@ categories = ["no-std", "cryptography", "wasm"]
 
 [features]
 default = ["std"]
-std = []
+std = ["zeroize/alloc"]
 
 [dependencies]
-zeroize = "1.8"
+zeroize = { version = "1.8", default-features = false }
 
 [dev-dependencies]
 benchmark-simple = "0.1.10"
