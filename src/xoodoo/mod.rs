@@ -1,8 +1,15 @@
 use core::convert::TryInto;
 use zeroize::Zeroize;
 
-#[cfg(not(target_arch = "x86_64"))]
+#[cfg(not(any(
+    target_arch = "x86_64",
+    all(target_arch = "arm", target_endian = "little", any(thumb1, thumb2)),
+)))]
 mod impl_portable;
+#[cfg(all(target_arch = "arm", target_endian = "little", thumb1))]
+mod impl_thumb1;
+#[cfg(all(target_arch = "arm", target_endian = "little", thumb2))]
+mod impl_thumb2;
 #[cfg(target_arch = "x86_64")]
 mod impl_x86_64;
 
@@ -11,6 +18,7 @@ const ROUND_KEYS: [u32; 12] = [
 ];
 
 #[derive(Clone, Debug)]
+#[repr(align(4))]
 pub struct Xoodoo {
     st: [u8; 48],
 }
@@ -57,7 +65,7 @@ impl Xoodoo {
         for st_word in &mut st_words {
             *st_word = (*st_word).to_le()
         }
-        self.from_words(&st_words);
+        self.init_from_words(st_words);
     }
 
     #[cfg(target_endian = "little")]
