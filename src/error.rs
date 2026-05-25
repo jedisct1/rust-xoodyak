@@ -7,6 +7,8 @@ pub enum Error {
     KeyRequired,
     TagMismatch,
 }
+impl core::error::Error for Error {}
+
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

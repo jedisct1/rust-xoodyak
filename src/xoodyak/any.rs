@@ -59,7 +59,7 @@ impl XoodyakAny {
     fn keyed(&mut self) -> Result<&mut XoodyakKeyed, Error> {
         match self {
             XoodyakAny::Hash(_) => Err(Error::KeyRequired),
-            XoodyakAny::Keyed(ref mut x) => Ok(x),
+            XoodyakAny::Keyed(x) => Ok(x),
         }
     }
 
