@@ -3,6 +3,7 @@ use zeroize::Zeroize;
 
 #[cfg(not(any(
     target_arch = "x86_64",
+    target_arch = "riscv32",
     all(target_arch = "arm", target_endian = "little", any(thumb1, thumb2)),
 )))]
 mod impl_portable;
@@ -12,6 +13,8 @@ mod impl_thumb1;
 mod impl_thumb2;
 #[cfg(target_arch = "x86_64")]
 mod impl_x86_64;
+#[cfg(target_arch = "riscv32")]
+mod impl_riscv32;
 
 const ROUND_KEYS: [u32; 12] = [
     0x058, 0x038, 0x3c0, 0x0d0, 0x120, 0x014, 0x060, 0x02c, 0x380, 0x0f0, 0x1a0, 0x012,
