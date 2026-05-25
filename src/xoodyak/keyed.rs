@@ -2,6 +2,9 @@ use super::internal::XoodyakCommon as _;
 use super::internal::{Mode, Phase};
 use super::*;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
 #[derive(Clone, Debug)]
 pub struct XoodyakKeyed {
     state: Xoodoo,
@@ -277,21 +280,21 @@ impl XoodyakKeyed {
         Ok(ct)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn encrypt_to_vec(&mut self, bin: &[u8]) -> Result<Vec<u8>, Error> {
         let mut out = vec![0u8; bin.len()];
         self.encrypt(&mut out, bin)?;
         Ok(out)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn decrypt_to_vec(&mut self, bin: &[u8]) -> Result<Vec<u8>, Error> {
         let mut out = vec![0u8; bin.len()];
         self.decrypt(&mut out, bin)?;
         Ok(out)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn aead_encrypt_to_vec_detached(
         &mut self,
 
@@ -302,14 +305,14 @@ impl XoodyakKeyed {
         Ok((out, auth_tag))
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn aead_encrypt_to_vec(&mut self, bin: Option<&[u8]>) -> Result<Vec<u8>, Error> {
         let mut out = vec![0u8; bin.unwrap_or_default().len() + AUTH_TAG_BYTES];
         self.aead_encrypt(&mut out, bin)?;
         Ok(out)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn aead_encrypt_in_place_to_vec(&mut self, mut in_out: Vec<u8>) -> Vec<u8> {
         let ct_len = in_out.len();
         in_out.resize_with(ct_len + AUTH_TAG_BYTES, || 0);
@@ -317,7 +320,7 @@ impl XoodyakKeyed {
         in_out
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn aead_decrypt_to_vec_detached(
         &mut self,
         auth_tag: Tag,
@@ -328,7 +331,7 @@ impl XoodyakKeyed {
         Ok(out)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn aead_decrypt_to_vec(&mut self, bin: &[u8]) -> Result<Vec<u8>, Error> {
         let ct_len = bin
             .len()
@@ -339,7 +342,7 @@ impl XoodyakKeyed {
         Ok(out)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     pub fn aead_decrypt_in_place_to_vec(&mut self, mut in_out: Vec<u8>) -> Result<Vec<u8>, Error> {
         let ct_len = in_out
             .len()

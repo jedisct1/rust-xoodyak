@@ -12,6 +12,9 @@ pub use tag::*;
 use crate::error::*;
 use crate::xoodoo::*;
 
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
 pub(crate) const HASH_ABSORB_RATE: usize = 16;
 pub(crate) const HASH_SQUEEZE_RATE: usize = 16;
 pub(crate) const KEYED_ABSORB_RATE: usize = 44;
@@ -148,7 +151,7 @@ pub trait XoodyakCommon: internal::XoodyakCommon {
         }
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     fn squeeze_to_vec(&mut self, len: usize) -> Vec<u8> {
         let mut out = vec![0u8; len];
         self.squeeze(&mut out);

@@ -12,8 +12,8 @@ repository = "https://github.com/jedisct1/rust-xoodyak"
 categories = ["no-std", "cryptography", "wasm"]
 
 [features]
-default = ["std"]
-std = ["zeroize/alloc"]
+default = []
+alloc = ["zeroize/alloc"]
 
 [dependencies]
 zeroize = { version = "1.8", default-features = false }

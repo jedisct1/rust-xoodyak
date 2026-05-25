@@ -177,3 +177,26 @@ fn test_aead_detached() {
         .unwrap();
     assert_eq!(&m2[..], &m[..]);
 }
+
+#[cfg(feature = "alloc")]
+#[test]
+fn test_alloc_to_vec() {
+    let nonce = [0u8, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+    let mut st = XoodyakKeyed::new(b"key", Some(&nonce), None, None).unwrap();
+    let st0 = st.clone();
+    let m = b"message";
+    
+    let c = st.encrypt_to_vec(m).unwrap();
+    let mut st = st0.clone();
+    let m2 = st.decrypt_to_vec(&c).unwrap();
+    assert_eq!(m, m2.as_slice());
+
+    let mut st = st0.clone();
+    st.absorb(b"ad");
+    let c2 = st.aead_encrypt_to_vec(Some(m)).unwrap();
+    let mut st = st0.clone();
+    st.absorb(b"ad");
+    let m3 = st.aead_decrypt_to_vec(&c2).unwrap();
+    assert_eq!(m, m3.as_slice());
+}
+

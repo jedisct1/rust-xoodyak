@@ -1,6 +1,9 @@
 use super::internal::{Mode, Phase};
 use super::*;
 
+#[cfg(feature = "alloc")]
+use alloc::vec::Vec;
+
 #[derive(Clone, Debug)]
 pub enum XoodyakAny {
     Hash(XoodyakHash),
@@ -154,19 +157,19 @@ impl XoodyakAny {
         self.keyed()?.aead_decrypt_in_place(in_out)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn encrypt_to_vec(&mut self, bin: &[u8]) -> Result<Vec<u8>, Error> {
         self.keyed()?.encrypt_to_vec(bin)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn decrypt_to_vec(&mut self, bin: &[u8]) -> Result<Vec<u8>, Error> {
         self.keyed()?.decrypt_to_vec(bin)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn aead_encrypt_to_vec_detached(
         &mut self,
@@ -176,19 +179,19 @@ impl XoodyakAny {
         self.keyed()?.aead_encrypt_to_vec_detached(bin)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn aead_encrypt_to_vec(&mut self, bin: Option<&[u8]>) -> Result<Vec<u8>, Error> {
         self.keyed()?.aead_encrypt_to_vec(bin)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn aead_encrypt_in_place_to_vec(&mut self, in_out: Vec<u8>) -> Result<Vec<u8>, Error> {
         Ok(self.keyed()?.aead_encrypt_in_place_to_vec(in_out))
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn aead_decrypt_to_vec_detached(
         &mut self,
@@ -199,13 +202,13 @@ impl XoodyakAny {
         self.keyed()?.aead_decrypt_to_vec_detached(auth_tag, bin)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn aead_decrypt_to_vec(&mut self, bin: &[u8]) -> Result<Vec<u8>, Error> {
         self.keyed()?.aead_decrypt_to_vec(bin)
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(feature = "alloc")]
     #[inline]
     pub fn aead_decrypt_in_place_to_vec(&mut self, in_out: Vec<u8>) -> Result<Vec<u8>, Error> {
         self.keyed()?.aead_decrypt_in_place_to_vec(in_out)
