@@ -1,6 +1,6 @@
 [package]
 name = "xoodyak"
-version = "0.9.0"
+version = "0.8.5"
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
 description = "Xoodyak lightweight cryptography: authenticated encryption (AEAD), hashing, and MACs based on Xoodoo, with no_std support"
